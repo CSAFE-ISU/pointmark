@@ -83,6 +83,7 @@ public class File_Uploader implements PlugIn { //implements PlugIn
         canvas.setFocusable(true);
         PointListener p = new PointListener();
         canvas.addMouseListener(p);
+        canvas.addKeyListener(p);
 
 
     }
