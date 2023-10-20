@@ -35,6 +35,8 @@ class JSONReader {
         PointRoi roi2 = new PointRoi();
         coords.add(fillROI(points, roi2, false), 1); //identifier 1
 
+        coords.runCommand("Show All");
+
         return coords;
     }
 
