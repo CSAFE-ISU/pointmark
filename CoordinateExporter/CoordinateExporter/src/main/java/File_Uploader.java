@@ -120,6 +120,5 @@ public class File_Uploader implements PlugIn { //implements PlugIn
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.pack(); //sizes the window
         frame.setVisible(true);
-
     }
 }
