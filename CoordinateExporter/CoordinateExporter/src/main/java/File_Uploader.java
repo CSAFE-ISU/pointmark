@@ -16,6 +16,7 @@ import java.io.IOException;
 @Plugin(type = Command.class, menuPath = "Plugins>Coordinate_Controller")
 public class File_Uploader implements PlugIn { //implements PlugIn
 
+
     CoordinateController coordControl;
 
     private JButton importFile;
@@ -27,6 +28,7 @@ public class File_Uploader implements PlugIn { //implements PlugIn
     private JButton exportFile;
     private JLabel importText;
     private JLabel exportText;
+    private JTextArea log;
 
     private final JFileChooser exported;
 
@@ -41,39 +43,14 @@ public class File_Uploader implements PlugIn { //implements PlugIn
         importFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                imported.setCurrentDirectory(new File(System.getProperty("user.home")));
-                imported.setFileFilter(new FileNameExtensionFilter("JSON files","json"));
-                int returnValue = imported.showOpenDialog(null);
-
-                if (returnValue == JFileChooser.APPROVE_OPTION) {
-                    File file = imported.getSelectedFile();
-                    String filePath = file.getAbsolutePath();
-                    coordControl.placeCoords(filePath);
-                    importText.setText("Imported: " + filePath);
-                }
-                //JOptionPane.showMessageDialog(null, "Hello World!");
-
+                openForImport();
             }
         });
 
         exportFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                exported.setCurrentDirectory(new File(System.getProperty("user.home")));
-                exported.setFileFilter(new FileNameExtensionFilter("JSON files","json"));
-                int returnValue = exported.showOpenDialog(null);
-
-                if (returnValue == JFileChooser.APPROVE_OPTION) {
-                    File file = exported.getSelectedFile();
-                    String filePath = file.getAbsolutePath();
-                    try {
-                        coordControl.exportCoords(filePath);
-                        exportText.setText("Exported: " + filePath);
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                }
-
+                openForExport();
             }
         });
 
@@ -85,11 +62,60 @@ public class File_Uploader implements PlugIn { //implements PlugIn
         canvas.addMouseListener(p);
         canvas.addKeyListener(p);
 
+        importFile.setFocusable(false);
+        exportFile.setFocusable(false);
+        panel.setFocusable(true);
+        panel.requestFocusInWindow();
 
+        panel.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_Q && ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)
+                        && ((e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0)) {
+                    log.setText("Exporting...");
+                    openForExport();
+                }
+                else if (e.getKeyCode() == KeyEvent.VK_Q && ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)) {
+                    log.setText("Importing...");
+                    openForImport();
+                }
+            }
+        });
+    }
+
+    public void openForImport() {
+        imported.setCurrentDirectory(new File(System.getProperty("user.home")));
+        imported.setFileFilter(new FileNameExtensionFilter("JSON files","json"));
+        int returnValue = imported.showOpenDialog(null);
+
+        if (returnValue == JFileChooser.APPROVE_OPTION) {
+            File file = imported.getSelectedFile();
+            String filePath = file.getAbsolutePath();
+            coordControl.placeCoords(filePath);
+            importText.setText("Imported: " + filePath);
+        }
+    }
+
+    public void openForExport() {
+        exported.setCurrentDirectory(new File(System.getProperty("user.home")));
+        exported.setFileFilter(new FileNameExtensionFilter("JSON files","json"));
+        int returnValue = exported.showOpenDialog(null);
+
+        if (returnValue == JFileChooser.APPROVE_OPTION) {
+            File file = exported.getSelectedFile();
+            String filePath = file.getAbsolutePath();
+            try {
+                coordControl.exportCoords(filePath);
+                exportText.setText("Exported: " + filePath);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
     }
 
     public void run(String arg) {
         JFrame frame = new JFrame("FileUploader");
+
         frame.setContentPane(new File_Uploader().panel);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.pack(); //sizes the window

@@ -3,17 +3,14 @@ import ij.ImagePlus;
 import ij.gui.PointRoi;
 import ij.plugin.frame.RoiManager;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.util.Arrays;
 
 /**
  * Listens for a double click, and will search out the nearest point within a certain range to swap
  * its ROI between the "valid" and "invalid" ROIs.
  */
-public class PointListener implements MouseListener, KeyListener {
+public class PointListener extends MouseAdapter implements KeyListener {
 
     private static String address;
 
@@ -27,7 +24,6 @@ public class PointListener implements MouseListener, KeyListener {
         qKeyPressed = false;
     }
 
-
     @Override
     public void mouseClicked(MouseEvent e) {
         IJ.log(qKeyPressed + ", " + (qKeyPressed && this.toString().equals(address)));
@@ -35,18 +31,6 @@ public class PointListener implements MouseListener, KeyListener {
             changeClosestPoint(e.getX(), e.getY());
         }
     }
-
-    @Override
-    public void mouseEntered(MouseEvent e) { }
-
-    @Override
-    public void mouseExited(MouseEvent e) { }
-
-    @Override
-    public void mousePressed(MouseEvent e) { }
-
-    @Override
-    public void mouseReleased(MouseEvent e) { }
 
     public void changeClosestPoint(int x, int y) {
         int selected = roiManager.getSelectedIndex();
