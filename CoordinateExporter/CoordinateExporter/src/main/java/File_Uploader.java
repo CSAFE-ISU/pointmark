@@ -28,7 +28,7 @@ public class File_Uploader implements PlugIn { //implements PlugIn
     private JButton exportFile;
     private JLabel importText;
     private JLabel exportText;
-    private JTextArea log;
+    private JLabel log;
 
     private final JFileChooser exported;
 
@@ -72,11 +72,9 @@ public class File_Uploader implements PlugIn { //implements PlugIn
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_Q && ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)
                         && ((e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0)) {
-                    log.setText("Exporting...");
                     openForExport();
                 }
                 else if (e.getKeyCode() == KeyEvent.VK_Q && ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)) {
-                    log.setText("Importing...");
                     openForImport();
                 }
             }
@@ -93,6 +91,7 @@ public class File_Uploader implements PlugIn { //implements PlugIn
             String filePath = file.getAbsolutePath();
             coordControl.placeCoords(filePath);
             importText.setText("Imported: " + filePath);
+            log.setText("Log: Importing...");
         }
     }
 
@@ -107,6 +106,7 @@ public class File_Uploader implements PlugIn { //implements PlugIn
             try {
                 coordControl.exportCoords(filePath);
                 exportText.setText("Exported: " + filePath);
+                log.setText("Log: Exporting...");
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }

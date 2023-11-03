@@ -111,10 +111,8 @@ public class PointListener extends MouseAdapter implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        IJ.log("Hmm?");
         if (!qKeyPressed && (e.getKeyChar() == 'q' || e.getKeyChar() == 'Q')) {
             qKeyPressed = true;
-            IJ.log("hit!");
         }
     }
 
@@ -122,7 +120,6 @@ public class PointListener extends MouseAdapter implements KeyListener {
     public void keyReleased(KeyEvent e) {
         if (qKeyPressed) {
             qKeyPressed = false;
-            IJ.log("released!");
         }
     }
 }
