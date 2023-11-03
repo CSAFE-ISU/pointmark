@@ -45,9 +45,9 @@ class JSONReader {
 
         for (int i = 0; i < points.size(); i++) {
             JSONArray obj = (JSONArray) points.get(i);
-            double x = ((Number) obj.get(0)).doubleValue();
-            double y = ((Number) obj.get(1)).doubleValue();
-            roi.addUserPoint(img, x, y);
+            double row = ((Number) obj.get(1)).doubleValue(); //row and then column
+            double col = ((Number) obj.get(0)).doubleValue();
+            roi.addUserPoint(img, row, col);
         }
         roi.setPointType(2);
         roi.setSize(3);

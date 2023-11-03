@@ -19,7 +19,7 @@ public class JSONWriter {
         this.img = img;
     }
 
-    public void exportCoordsAsJSON(String filePath) throws IOException {
+    public void exportCoordsAsJSON(String filePath) {
 
         JSONObject jsonObject = new JSONObject();
 
@@ -38,16 +38,16 @@ public class JSONWriter {
 
         for (Point p : validPoints) {
             tmp = new JSONArray();
+            tmp.add(p.getY()); //row and then column
             tmp.add(p.getX());
-            tmp.add(p.getY());
             validJSON.add(tmp);
         }
 
         for (Point p : invalidPoints) {
 
             tmp = new JSONArray();
-            tmp.add(p.getX());
             tmp.add(p.getY());
+            tmp.add(p.getX());
             invalidJSON.add(tmp);
         }
 
