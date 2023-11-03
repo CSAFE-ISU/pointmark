@@ -2,6 +2,8 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.PointRoi;
 import ij.plugin.frame.RoiManager;
+
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
@@ -18,15 +20,18 @@ public class PointListener extends MouseAdapter implements KeyListener {
 
     private boolean qKeyPressed;
 
-    public PointListener() {
+    private JLabel log;
+
+    public PointListener(JLabel log) {
         address = this.toString();
         roiManager = RoiManager.getRoiManager();
         qKeyPressed = false;
+        this.log = log;
     }
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        IJ.log(qKeyPressed + ", " + (qKeyPressed && this.toString().equals(address)));
+        //IJ.log(qKeyPressed + ", " + (qKeyPressed && this.toString().equals(address)));
         if (qKeyPressed && this.toString().equals(address)) {
             changeClosestPoint(e.getX(), e.getY());
         }
@@ -41,18 +46,18 @@ public class PointListener extends MouseAdapter implements KeyListener {
         y = (int)(y/magnification);
 
         if (pr == null || pr.size() == 0) {
-            IJ.log("There is nothing here!");
+            log.setText("Log: There is nothing here!");
             return;
         }
 
-        IJ.log("Clicked at (" + x + ", " + y + ")");
+        log.setText("Log: Clicked at (" + x + ", " + y + ")\n");
 
         Point[] points = pr.getContainedPoints();
         Point closest = null;
         double closestDist = Integer.MAX_VALUE;
         int index = 0;
         for (int i = 0; i < points.length; i++) {
-            IJ.log("Point " + index + " at (" + points[i].getX() + ", " + points[i].getY() + ")");
+            //IJ.log("Point " + index + " at (" + points[i].getX() + ", " + points[i].getY() + ")");
             double xDiff = Math.abs(x - points[i].getX());
             double yDiff = Math.abs(y - points[i].getY());;
             double distance = Math.sqrt((xDiff * xDiff) + (yDiff * yDiff));
@@ -60,15 +65,16 @@ public class PointListener extends MouseAdapter implements KeyListener {
                 closest = points[i];
                 closestDist = distance;
                 index = i;
-                IJ.log("Closest point is " + i + ": (" + points[i].getX() + ", " + points[i].getY() + ")");
+                log.setText(log.getText() + "Closest point is " + i + ": ("
+                        + points[i].getX() + ", " + points[i].getY() + ")\n");
             }
         }
 
-        IJ.log("Closest distance: " + closestDist);
+        log.setText("Closest distance: " + closestDist);
         //50 gotten by testing relative values, may need to adjust for measurement plugin.
         //50 pixels is the standard limit for distance when the ImagePlus window is full-screen 100% size.
-        if (closestDist > 50) {IJ.log("No point selected!"); return;}
-        IJ.log(closestDist + "");
+        if (closestDist > 50) {log.setText(log.getText() + "\n" + "No point close enough for selection!"); return;}
+        //IJ.log(closestDist + "");
 
         //No direct way to delete point from ROI
         PointRoi newPR = new PointRoi();

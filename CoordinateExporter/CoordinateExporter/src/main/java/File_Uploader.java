@@ -16,7 +16,6 @@ import java.io.IOException;
 @Plugin(type = Command.class, menuPath = "Plugins>Coordinate_Controller")
 public class File_Uploader implements PlugIn { //implements PlugIn
 
-
     CoordinateController coordControl;
 
     private JButton importFile;
@@ -58,7 +57,7 @@ public class File_Uploader implements PlugIn { //implements PlugIn
 
         ImageCanvas canvas = imp.getWindow().getCanvas();
         canvas.setFocusable(true);
-        PointListener p = new PointListener();
+        PointListener p = new PointListener(log);
         canvas.addMouseListener(p);
         canvas.addKeyListener(p);
 
