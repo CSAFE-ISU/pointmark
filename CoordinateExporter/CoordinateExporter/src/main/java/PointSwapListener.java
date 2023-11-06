@@ -13,24 +13,16 @@ import java.util.*;
  * Listens for a double click, and will search out the nearest point within a certain range to swap
  * its ROI between the "valid" and "invalid" ROIs.
  */
-public class PointSwapListener extends MouseAdapter implements KeyListener {
+public class PointSwapListener extends PointListener implements KeyListener {
 
     private static String address;
 
-    private RoiManager roiManager;
-
-    private ImagePlus img;
-
     private boolean qKeyPressed;
 
-    private JLabel log;
-
     public PointSwapListener(JLabel log) {
+        super(log);
         address = this.toString();
-        roiManager = RoiManager.getRoiManager();
         qKeyPressed = false;
-        this.log = log;
-        img = IJ.getImage();
     }
 
     @Override
@@ -87,28 +79,15 @@ public class PointSwapListener extends MouseAdapter implements KeyListener {
             }
         }
 
-        if (selected == 0) {
-            newPR.setStrokeColor(new Color(0, 0, 255));
-            newPR.setPointType(2);
-            newPR.setSize(3);
-            newPR.setName("valid");
-        }
-        else {
-            newPR.setStrokeColor(new Color(255, 255, 0));
-            newPR.setPointType(2);
-            newPR.setSize(3);
-            newPR.setName("invalid");
-        }
-
-        roiManager.setRoi(newPR, selected);
+        resetROI(newPR, selected);
 
         //Now add the minDistance Point to the other Roi
         int otherIndex = (selected == 0) ? 1 : 0;
         PointRoi otherPR = (PointRoi) roiManager.getRoi(otherIndex);
         otherPR.addPoint(closest.getX(), closest.getY());
         roiManager.setRoi(otherPR, otherIndex);
-        roiManager.select(selected);
-        img.updateAndDraw();
+
+        resetImage(selected);
     }
 
     @Override

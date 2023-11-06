@@ -61,7 +61,7 @@ public class File_Uploader implements PlugIn { //implements PlugIn
         ImageCanvas canvas = imp.getWindow().getCanvas();
         canvas.setFocusable(true);
         PointSwapListener p = new PointSwapListener(log);
-        PointDragListener pd = new PointDragListener();
+        PointDragListener pd = new PointDragListener(log);
         canvas.addMouseListener(p);
         canvas.addKeyListener(p);
         canvas.addMouseListener(pd);

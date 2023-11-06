@@ -3,19 +3,14 @@ import ij.ImagePlus;
 import ij.gui.PointRoi;
 import ij.plugin.frame.RoiManager;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-public class PointDragListener extends MouseAdapter {
+public class PointDragListener extends PointListener {
 
     private static String address;
-
-    RoiManager roiManager;
-
-    ImagePlus img;
-
-    boolean dragged;
 
     Point[] initialState;
 
@@ -23,19 +18,16 @@ public class PointDragListener extends MouseAdapter {
 
     int selected;
 
-    public PointDragListener() {
-        dragged = false;
+    public PointDragListener(JLabel log) {
+        super(log);
         address = this.toString();
-        roiManager = RoiManager.getRoiManager();
-        img = IJ.getImage();
     }
 
     @Override
-    public void mousePressed(MouseEvent e) {
-        if (dragged || !this.toString().equals(address)) {
+    public void mousePressed(MouseEvent e) { //This doesn't seem to work with mouseDragged.
+        if (!this.toString().equals(address)) {
             return;
         }
-        dragged = true;
 
         selected = roiManager.getSelectedIndex();
 
@@ -52,8 +44,6 @@ public class PointDragListener extends MouseAdapter {
         if (!this.toString().equals(address)) {
             return;
         }
-
-        dragged = false; //Need this?
 
         Point mouseNew = MouseInfo.getPointerInfo().getLocation();
         if (mouse.equals(mouseNew)) {
@@ -81,22 +71,11 @@ public class PointDragListener extends MouseAdapter {
                 initialStateROI.addPoint(p.getX(), p.getY());
             }
 
-            if (selected == 0) {
-                initialStateROI.setStrokeColor(new Color(0, 0, 255));
-                initialStateROI.setPointType(2);
-                initialStateROI.setSize(3);
-                initialStateROI.setName("valid");
-            }
-            else {
-                initialStateROI.setStrokeColor(new Color(255, 255, 0));
-                initialStateROI.setPointType(2);
-                initialStateROI.setSize(3);
-                initialStateROI.setName("invalid");
-            }
+            resetROI(initialStateROI, selected);
 
-            roiManager.setRoi(initialStateROI, selected);
-            img.updateAndRepaintWindow();
-            roiManager.select(roiManager.getSelectedIndex());
+            resetImage(selected);
+
+            log.setText("Log: No moving points!");
         }
     }
 }
