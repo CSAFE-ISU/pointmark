@@ -25,8 +25,11 @@ public class File_Uploader implements PlugIn { //implements PlugIn
     private JPanel panel;
 
     private JButton exportFile;
+
     private JLabel importText;
+
     private JLabel exportText;
+
     private JLabel log;
 
     private final JFileChooser exported;
@@ -57,9 +60,11 @@ public class File_Uploader implements PlugIn { //implements PlugIn
 
         ImageCanvas canvas = imp.getWindow().getCanvas();
         canvas.setFocusable(true);
-        PointListener p = new PointListener(log);
+        PointSwapListener p = new PointSwapListener(log);
+        PointDragListener pd = new PointDragListener();
         canvas.addMouseListener(p);
         canvas.addKeyListener(p);
+        canvas.addMouseListener(pd);
 
         importFile.setFocusable(false);
         exportFile.setFocusable(false);

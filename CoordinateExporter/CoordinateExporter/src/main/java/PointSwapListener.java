@@ -1,32 +1,36 @@
 import ij.IJ;
 import ij.ImagePlus;
+import ij.Undo;
 import ij.gui.PointRoi;
 import ij.plugin.frame.RoiManager;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * Listens for a double click, and will search out the nearest point within a certain range to swap
  * its ROI between the "valid" and "invalid" ROIs.
  */
-public class PointListener extends MouseAdapter implements KeyListener {
+public class PointSwapListener extends MouseAdapter implements KeyListener {
 
     private static String address;
 
     private RoiManager roiManager;
 
+    private ImagePlus img;
+
     private boolean qKeyPressed;
 
     private JLabel log;
 
-    public PointListener(JLabel log) {
+    public PointSwapListener(JLabel log) {
         address = this.toString();
         roiManager = RoiManager.getRoiManager();
         qKeyPressed = false;
         this.log = log;
+        img = IJ.getImage();
     }
 
     @Override
@@ -40,10 +44,9 @@ public class PointListener extends MouseAdapter implements KeyListener {
     public void changeClosestPoint(int x, int y) {
         int selected = roiManager.getSelectedIndex();
         PointRoi pr = (PointRoi)roiManager.getRoi(selected);
-        ImagePlus img = IJ.getImage();
         double magnification = img.getCanvas().getMagnification();
-        x = (int)(x/magnification);
-        y = (int)(y/magnification);
+        x = (int)(x / magnification);
+        y = (int)(y / magnification);
 
         if (pr == null || pr.size() == 0) {
             log.setText("Log: There is nothing here!");
@@ -74,7 +77,6 @@ public class PointListener extends MouseAdapter implements KeyListener {
         //50 gotten by testing relative values, may need to adjust for measurement plugin.
         //50 pixels is the standard limit for distance when the ImagePlus window is full-screen 100% size.
         if (closestDist > 50) {log.setText(log.getText() + "\n" + "No point close enough for selection!"); return;}
-        //IJ.log(closestDist + "");
 
         //No direct way to delete point from ROI
         PointRoi newPR = new PointRoi();
@@ -105,14 +107,13 @@ public class PointListener extends MouseAdapter implements KeyListener {
         PointRoi otherPR = (PointRoi) roiManager.getRoi(otherIndex);
         otherPR.addPoint(closest.getX(), closest.getY());
         roiManager.setRoi(otherPR, otherIndex);
-
         roiManager.select(selected);
         img.updateAndDraw();
     }
 
     @Override
     public void keyTyped(KeyEvent e) {
-
+        //NULL
     }
 
     @Override
