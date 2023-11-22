@@ -36,9 +36,13 @@ public class PointSwapListener extends PointListener implements KeyListener {
     public void changeClosestPoint(int x, int y) {
         int selected = roiManager.getSelectedIndex();
         PointRoi pr = (PointRoi)roiManager.getRoi(selected);
+
         double magnification = img.getCanvas().getMagnification();
-        x = (int)(x / magnification);
-        y = (int)(y / magnification);
+        int transX = img.getCanvas().getSrcRect().x;
+        int transY = img.getCanvas().getSrcRect().y;
+
+        x = (int)(x / magnification + transX);
+        y = (int)(y / magnification + transY);
 
         if (pr == null || pr.size() == 0) {
             log.setText("Log: There is nothing here!");
@@ -60,10 +64,10 @@ public class PointSwapListener extends PointListener implements KeyListener {
                 closest = points[i];
                 closestDist = distance;
                 index = i;
-                log.setText(log.getText() + "Closest point is " + i + ": ("
-                        + points[i].getX() + ", " + points[i].getY() + ")\n");
             }
         }
+
+        //IJ.log("Coordinates : (" + x + ", " + y + ") vs Closest: (" + closest.getX() + ", " + closest.getY() + ")");
 
         log.setText("Closest distance: " + closestDist);
         //50 gotten by testing relative values, may need to adjust for measurement plugin.
@@ -86,6 +90,15 @@ public class PointSwapListener extends PointListener implements KeyListener {
         PointRoi otherPR = (PointRoi) roiManager.getRoi(otherIndex);
         otherPR.addPoint(closest.getX(), closest.getY());
         roiManager.setRoi(otherPR, otherIndex);
+
+        if (selected == 0) {
+            log.setText("Valid: " + newPR.getContainedPoints().length + "     Invalid: "
+                    + otherPR.getContainedPoints().length);
+        }
+        else {
+            log.setText("Valid: " + otherPR.getContainedPoints().length + "     Invalid: "
+                    + newPR.getContainedPoints().length);
+        }
 
         resetImage(selected);
     }
