@@ -2,8 +2,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
 import ij.plugin.PlugIn;
-import org.scijava.command.Command;
-import org.scijava.plugin.Plugin;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.event.*;
