@@ -13,7 +13,7 @@ import java.io.IOException;
 /**
  * Running class of the Plugin, takes in an import and export file.
  */
-@Plugin(type = Command.class, menuPath = "Plugins>Coordinate_Controller")
+//@Plugin(type = Command.class, menuPath = "Plugins>Coordinate Controller")
 public class File_Uploader implements PlugIn { //implements PlugIn
 
     CoordinateController coordControl;
@@ -124,5 +124,9 @@ public class File_Uploader implements PlugIn { //implements PlugIn
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.pack(); //sizes the window
         frame.setVisible(true);
+    }
+
+    public static void main(String[] args) {
+
     }
 }
