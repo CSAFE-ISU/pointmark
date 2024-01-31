@@ -12,14 +12,8 @@ public class CoordinateController {
 
     ImagePlus img;
 
-    ResultsTable rt;
-
     public CoordinateController(ImagePlus img) {
         this.img = img;
-        rt = ij.measure.ResultsTable.getResultsTable();
-        if (rt == null) {
-            throw new RuntimeException("Could not find results table.");
-        }
     }
 
     public void placeCoords(String filePath) {

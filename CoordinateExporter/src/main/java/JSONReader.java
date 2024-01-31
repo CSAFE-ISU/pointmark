@@ -1,3 +1,4 @@
+import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
@@ -64,6 +65,7 @@ class JSONReader {
         for (Roi entry : coords) {
             img.setRoi(entry, true);
         }
+        coords.select(img, 0);
     }
 
 }
