@@ -1,67 +1,33 @@
-This is an example Maven project implementing an ImageJ2 command.
+Pointmark
+=====================================
 
-For an example Maven project implementing an **original ImageJ plugin**, see:
-    https://github.com/imagej/example-legacy-plugin
+This is a a plugin for importing sets of "valid" and "invalid" points for an image in Fiji in order to edit and export them.
 
-It is intended as an ideal starting point to develop new ImageJ2 commands
-in an IDE of your choice. You can even collaborate with developers using a
-different IDE than you.
+How To Set Up
+------
+1. Make sure Fiji (ImageJ2) is installed
+2. Add jar to Fiji.app/plugins directory
+3. Open an image within ImageJ
+4. Navigate to Plugins menu, if the second step was followed correctly then "Coordinate Controller" should appear upon scrolling down
+5. Select Coordinate Controller to boot up the plugin
 
-* In [Eclipse](http://eclipse.org), for example, it is as simple as
-  _File &#8250; Import... &#8250; Existing Maven Project_.
+User Manual
+------
+1. Import:
+    +   Click on the Import button in Coordinate Controller's log menu and select a JSON file to import onto the open image.
+    +   Correct format for JSON has "valid" and "invalid" headers storing arrays of size 2, the first value being the x-coordinate and the second the y-coordinate. Can be doubles (decimals) or integers.
+2. Export:
+    +   Click on the Export button in Coordinate Controller's log menu and select a JSON file to export points into.
+    +   WARNING: Previous contents of the JSON will be overwritten upon an export.
+3. Adding a Point:
+    +   Select the Multi-point Tool in ImageJ
+    +   Choose either the valid or invalid point set
+    +   Click the image on where you would like to mark a point
+4. Deleting a Point:
+    +   Make sure the set of the point you would like to delete is selected (it will be a cyan/light blue color)
+    +   Hold Alt + click on the point to delete
+5. Swapping a Point:
+    +   Make sure the set of the point you would like to swap is selected (it will be a cyan/light blue color)
+    +   Hold Q + click on the point to swap it to the other point set (it should change color)
 
-* In [NetBeans](http://netbeans.org), it is even simpler:
-  _File &#8250; Open Project_.
-
-* The same works in [IntelliJ](http://jetbrains.net).
-
-* If [jEdit](http://jedit.org) is your preferred IDE, you will need the
-  [Maven Plugin](http://plugins.jedit.org/plugins/?MavenPlugin).
-
-Die-hard command-line developers can use Maven directly by calling `mvn`
-in the project root.
-
-However you build the project, in the end you will have the `.jar` file
-(called *artifact* in Maven speak) in the `target/` subdirectory.
-
-To copy the artifact into the correct place, you can call
-`mvn -Dscijava.app.directory="/path/to/ImageJ2.app/"`.
-This will not only copy your artifact, but also all the dependencies.
-
-Developing code in an IDE is convenient, especially for debugging.
-To that end, this project contains a `main` method which launches ImageJ2,
-loads an image and runs the command.
-
-Since this project is intended as a starting point for your own
-developments, it is in the public domain.
-
-How to use this project as a starting point
-===========================================
-
-1. Visit [this link](https://github.com/imagej/example-imagej2-command/generate)
-   to create a new repository in your space using this one as a template.
-
-2. [Clone your new repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository).
-
-3. Edit the `pom.xml` file, fixing all the lines labeled `FIXME`.
-
-4. Remove the `GaussFiltering.java` file and add your own `.java` files
-   to `src/main/java/<package>/` (if you need supporting files such as icons
-   in the resulting `.jar` file, put them into `src/main/resources/`)
-
-5. Replace the contents of `README.md` with information about your project.
-
-6. Make your initial
-   [commit](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/making-changes-in-a-branch/committing-and-reviewing-changes-to-your-project) and
-   [push the results](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository)!
-
-### Eclipse: To ensure that Maven copies the command to your ImageJ2 folder
-
-1. Go to _Run Configurations..._
-2. Choose _Maven Build_
-3. Add the following parameter:
-    - name: `scijava.app.directory`
-    - value: `/path/to/ImageJ2.app/`
-
-This ensures that the final `.jar` file will also be copied
-into your ImageJ2 folder everytime you run the Maven build.
+NOTE: The ability to move points is disabled for this plugin in order to reduce errors.
