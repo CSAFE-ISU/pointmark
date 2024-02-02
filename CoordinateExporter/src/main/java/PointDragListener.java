@@ -8,6 +8,10 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+/**
+ * Class to reverse changes in position of points caused by the user. Essentially, does not allow
+ * for points to be moved while the plugin is running in order to decrease human error.
+ */
 public class PointDragListener extends PointListener {
 
     private static String address;

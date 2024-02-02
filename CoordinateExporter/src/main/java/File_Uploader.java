@@ -9,10 +9,9 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Running class of the Plugin, takes in an import and export file.
+ * Main class of the plugin, takes in an import and export file. Underscore required for ImageJ2 plugin convention.
  */
-//@Plugin(type = Command.class, menuPath = "Plugins>Coordinate Controller")
-public class File_Uploader implements PlugIn { //implements PlugIn
+public class File_Uploader implements PlugIn {
 
     CoordinateController coordControl;
 
@@ -66,7 +65,7 @@ public class File_Uploader implements PlugIn { //implements PlugIn
 
         importFile.setFocusable(false);
         exportFile.setFocusable(false);
-        panel.setFocusable(true);
+        panel.setFocusable(true); //sets focus to the log panel itself
         panel.requestFocusInWindow();
 
         panel.addKeyListener(new KeyAdapter() {
@@ -74,10 +73,10 @@ public class File_Uploader implements PlugIn { //implements PlugIn
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_Q && ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)
                         && ((e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0)) {
-                    openForExport();
+                    openForExport(); //ctrl + shift + Q to open export
                 }
                 else if (e.getKeyCode() == KeyEvent.VK_Q && ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)) {
-                    openForImport();
+                    openForImport(); //ctrl + Q to open import
                 }
             }
         });
@@ -91,7 +90,7 @@ public class File_Uploader implements PlugIn { //implements PlugIn
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             File file = imported.getSelectedFile();
             String filePath = file.getAbsolutePath();
-            coordControl.placeCoords(filePath);
+            coordControl.importCoords(filePath);
             importText.setText("Imported: " + filePath);
             log.setText("Log: Importing...");
         }

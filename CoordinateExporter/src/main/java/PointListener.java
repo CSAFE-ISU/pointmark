@@ -7,6 +7,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 
+/**
+ * Abstract class for listeners relating to points applied to an image via the ROI Manager.
+ */
 public abstract class PointListener extends MouseAdapter {
 
     protected RoiManager roiManager;

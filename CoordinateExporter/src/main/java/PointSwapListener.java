@@ -27,7 +27,6 @@ public class PointSwapListener extends PointListener implements KeyListener {
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        //IJ.log(qKeyPressed + ", " + (qKeyPressed && this.toString().equals(address)));
         if (qKeyPressed && this.toString().equals(address)) {
             changeClosestPoint(e.getX(), e.getY());
         }
@@ -56,7 +55,6 @@ public class PointSwapListener extends PointListener implements KeyListener {
         double closestDist = Integer.MAX_VALUE;
         int index = 0;
         for (int i = 0; i < points.length; i++) {
-            //IJ.log("Point " + index + " at (" + points[i].getX() + ", " + points[i].getY() + ")");
             double xDiff = Math.abs(x - points[i].getX());
             double yDiff = Math.abs(y - points[i].getY());;
             double distance = Math.sqrt((xDiff * xDiff) + (yDiff * yDiff));
@@ -67,10 +65,8 @@ public class PointSwapListener extends PointListener implements KeyListener {
             }
         }
 
-        //IJ.log("Coordinates : (" + x + ", " + y + ") vs Closest: (" + closest.getX() + ", " + closest.getY() + ")");
-
         log.setText("Closest distance: " + closestDist);
-        //50 gotten by testing relative values, may need to adjust for measurement plugin.
+
         //50 pixels is the standard limit for distance when the ImagePlus window is full-screen 100% size.
         if (closestDist > 50) {log.setText(log.getText() + "\n" + "No point close enough for selection!"); return;}
 
@@ -79,7 +75,6 @@ public class PointSwapListener extends PointListener implements KeyListener {
         for (int i = 0; i < points.length; i++) {
             if (i != index) {
                 newPR.addPoint(points[i].getX(), points[i].getY());
-                //IJ.log("Restoring point at index " + i + ": (" + points[i].getX() + ", " + points[i].getY() + ")");
             }
         }
 

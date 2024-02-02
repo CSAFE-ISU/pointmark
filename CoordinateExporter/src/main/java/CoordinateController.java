@@ -1,7 +1,5 @@
-import ij.IJ;
 import ij.ImagePlus;
 import ij.plugin.frame.RoiManager;
-import ij.measure.ResultsTable;
 import org.json.simple.parser.ParseException;
 import java.io.IOException;
 
@@ -16,7 +14,7 @@ public class CoordinateController {
         this.img = img;
     }
 
-    public void placeCoords(String filePath) {
+    public void importCoords(String filePath) {
         try {
             JSONReader reader = new JSONReader(img);
             RoiManager coords = reader.importCoordsFromJSON(filePath);

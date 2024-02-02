@@ -13,7 +13,7 @@ import java.io.*;
 /**
  * Reads the imported JSON file and applies it to the ImagePlus window in two
  * ROIs, "valid" and "invalid." In the imported JSON file, use labels "valid"
- * and "invalid" with no modifications.
+ * and "invalid" with no modifications (i.e. "valid_" or "invalid_points").
  */
 class JSONReader {
 
@@ -44,13 +44,13 @@ class JSONReader {
     public PointRoi fillROI(JSONArray points, PointRoi roi, boolean isValid) {
         String title = isValid ? "valid" : "invalid";
 
-        for (int i = 0; i < points.size(); i++) {
-            JSONArray obj = (JSONArray) points.get(i);
-            double row = ((Number) obj.get(1)).doubleValue(); //row and then column
-            double col = ((Number) obj.get(0)).doubleValue();
+        for (int i = 0; i < points.size(); i++) { //obtains point values
+            JSONArray array = (JSONArray) points.get(i);
+            double row = ((Number) array.get(1)).doubleValue();
+            double col = ((Number) array.get(0)).doubleValue();
             roi.addUserPoint(img, row, col);
         }
-        roi.setPointType(2);
+        roi.setPointType(2); //sets values for the ROI itself
         roi.setSize(3);
         roi.setName(title);
         if (isValid) {
