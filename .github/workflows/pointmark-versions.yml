@@ -30,7 +30,7 @@ jobs:
             - name: Build Project # This would actually build your project, using zip for an example artifact
               run: |
                 pwd
-                cd CoordinateExporter
+                working-directory: CoordinateExporter
                 mvn clean
                 mvn compile
                 pwd
@@ -38,6 +38,7 @@ jobs:
 
             - name: Package JAR # This would actually build your project, using zip for an example artifact
               run: |
+                working-directory: CoordinateExporter
                 mvn package
 
             - name: Create Release
