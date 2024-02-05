@@ -14,7 +14,7 @@ jobs:
         name: Release Pointmark
         runs-on: ubuntu-latest
         steps:  
-
+        
             - name: Checkout Code
               uses: actions/checkout@v2
               id: release_pointmark
@@ -22,8 +22,7 @@ jobs:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build project # This would actually build your project, using zip for an example artifact
-              run: |
-                zip --junk-paths artifact
+              run: zip artifact.zip
 
             - name: Create Release
               id: create_release
