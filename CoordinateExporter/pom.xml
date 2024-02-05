@@ -155,5 +155,11 @@
 			<artifactId>json-simple</artifactId>
 			<version>1.1.1</version>
 		</dependency>
+		<dependency>
+		        <groupId>net.imagej</groupId>
+		        <artifactId>ij</artifactId>
+		        <version>1.54f</version>
+		        <scope>provided</scope>
+    		</dependency>
 	</dependencies>
 </project>
