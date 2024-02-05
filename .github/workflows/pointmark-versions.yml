@@ -36,19 +36,17 @@ jobs:
     release_pointmark:
         name: Release Pointmark
         runs-on: ubuntu-latest
-        # needs:
         steps:  
             - name: Checkout Code
               uses: actions/checkout@v2
 
               id: release_pointmark
-              # uses: TriPSs/conventional-changelog-action@v3.7.1
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Create Release
               uses: actions/create-release@v1
-              # if: ${{ steps.release_pointmark.outputs.skipped == 'false' }}
+              id: create_release
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
