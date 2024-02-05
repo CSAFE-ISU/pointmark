@@ -21,8 +21,14 @@ jobs:
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Build project # This would actually build your project, using zip for an example artifact
-              run: zip artifact.zip
+            - name: JDK Setup
+              uses: actions/setup-java@v2
+              with:
+                distribution: 'adopt'
+                java-version: '11'
+
+            - name: Build JAR # This would actually build your project, using zip for an example artifact
+              run: mvn package
 
             - name: Create Release
               id: create_release
@@ -44,9 +50,9 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                 upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-                asset_path: ./artifact.zip
-                asset_name: artifact.zip
-                asset_content_type: application/zip
+                asset_path: target/CoordinateExporter.jar
+                asset_name: CoordinateExporter.jar
+                asset_content_type: application/java-archive
 
 
 # jobs:
