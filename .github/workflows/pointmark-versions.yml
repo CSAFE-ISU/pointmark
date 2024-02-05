@@ -29,13 +29,12 @@ jobs:
 
             - name: Build Project # This would actually build your project, using zip for an example artifact
               run: |
+                pwd
                 cd CoordinateExporter
                 mvn clean
                 mvn compile
-
-            - name: Print current working directory
-              run: |
                 pwd
+                
 
             - name: Package JAR # This would actually build your project, using zip for an example artifact
               run: |
