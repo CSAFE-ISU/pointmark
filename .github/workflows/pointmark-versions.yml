@@ -39,15 +39,15 @@ jobs:
         steps:  
             - uses: actions/checkout@v2
 
-            - name: Create release
-              id: changelog
-              uses: TriPSs/conventional-changelog-action@v3.7.1
-              with:
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
+            # - name: Create release
+            #   id: changelog
+            #   uses: TriPSs/conventional-changelog-action@v3.7.1
+            #   with:
+            #       github-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: create release
               uses: actions/create-release@v1
-              if: ${{ steps.changelog.outputs.skipped == 'false' }}
+              # if: ${{ steps.changelog.outputs.skipped == 'false' }}
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
