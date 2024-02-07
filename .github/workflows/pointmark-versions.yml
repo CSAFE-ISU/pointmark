@@ -28,15 +28,16 @@ jobs:
                 java-version: '11'
 
             - name: Build Project # This would actually build your project, using zip for an example artifact
-              working-directory: CoordinateExporter/target  
+              working-directory: CoordinateExporter  
               run: |
                 pwd
+                ls -la
                 mvn clean
                 mvn compile
                 
 
             - name: Package JAR # This would actually build your project, using zip for an example artifact
-              working-directory: CoordinateExporter/target
+              working-directory: CoordinateExporter
               run: |
                 pwd
                 mvn package
