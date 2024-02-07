@@ -56,6 +56,11 @@ jobs:
                     Changes in this Release:
                     - First Change
                     - Second Change
+
+            - name: Print Directory
+              run: |
+                pwd
+                ls -la
                     
             - name: Upload Release Asset
               id: upload-release-asset 
@@ -67,48 +72,3 @@ jobs:
                 asset_path: CoordinateExporter-0.1.0-SNAPSHOT-shaded.jar
                 asset_name: CoordinateExporter-0.1.0-SNAPSHOT-shaded.jar
                 asset_content_type: application/java-archive
-
-
-# jobs:
-#     changelog:
-#         runs-on: ubuntu-latest
-
-#         steps:  
-#             - uses: actions/checkout@v2
-
-#             - name: Create release
-#               id: changelog
-#               uses: TriPSs/conventional-changelog-action@v3.7.1
-#               with:
-#                   github-token: ${{ secrets.CHANGELOG_RELEASE }}
-
-#             - name: create release
-#               uses: actions/create-release@v1
-#               if: ${{ steps.changelog.outputs.skipped == 'false' }}
-#               env:
-#                 GITHUB_TOKEN: ${{ secrets.CHANGELOG_RELEASE }}
-#               with:
-#                 tag_name: ${{ steps.changelog.outputs.tag }}
-#                 release_name: ${{ steps.changelog.outputs.tag }}
-#                 body: ${{ steps.changelog.outputs.clean.changelog }}
-
-# build:
-#     name: Create Release
-#     runs-on: ubuntu-latest
-#     steps:
-#     - name: Checkout code
-#         uses: actions/checkout@v2
-#     - name: Create Release
-#         id: create_release
-#         uses: actions/create-release@v1
-#         env:
-#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-#         with:
-#         tag_name: ${{ github.ref }}
-#         release_name: Release ${{ github.ref }}
-#         body: |
-#             Changes in this Release
-#             - First Change
-#             - Second Change
-#         draft: false
-#         prerelease: false
