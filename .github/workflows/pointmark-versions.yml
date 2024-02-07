@@ -40,6 +40,7 @@ jobs:
               working-directory: CoordinateExporter
               run: |
                 pwd
+                ls -la
                 mvn package
 
             - name: Create Release
