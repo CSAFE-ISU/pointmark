@@ -55,11 +55,6 @@ jobs:
                 body: |
                     Changes in this Release:
                     - None for now, testing workflow
-
-            - name: Print Directory
-              run: |
-                pwd
-                ls -la
                     
             - name: Upload Release Asset
               id: upload-release-asset 
@@ -70,5 +65,5 @@ jobs:
               with:
                 upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
                 asset_path: CoordinateExporter/target/CoordinateExporter-0.1.0-SNAPSHOT-shaded.jar
-                asset_name: CoordinateExporter-${{ env.VERSION_NUMBER }}-SNAPSHOT-shaded.jar
+                asset_name: CoordinateExporter-${{ env.VERSION_NUMBER }}.jar
                 asset_content_type: application/java-archive
