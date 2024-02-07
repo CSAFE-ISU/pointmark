@@ -37,7 +37,7 @@ jobs:
                 
 
             - name: Package JAR # This would actually build your project, using zip for an example artifact
-              working-directory: CoordinateExporter/target
+              working-directory: CoordinateExporter
               run: |
                 pwd
                 ls -la
