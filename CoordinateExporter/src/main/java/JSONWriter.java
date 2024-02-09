@@ -1,8 +1,10 @@
 import ij.ImagePlus;
 import ij.gui.PointRoi;
 import ij.plugin.frame.RoiManager;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONObject;
+//import org.json.simple.JSONArray;
+//import org.json.simple.JSONObject;
 import java.awt.*;
 import java.io.*;
 
@@ -38,17 +40,17 @@ public class JSONWriter {
 
         for (Point p : validPoints) {
             tmp = new JSONArray();
-            tmp.add(p.getY()); //row and then column
-            tmp.add(p.getX());
-            validJSON.add(tmp);
+            tmp.put(p.getY()); //row and then column
+            tmp.put(p.getX());
+            validJSON.put(tmp);
         }
 
         for (Point p : invalidPoints) {
 
             tmp = new JSONArray();
-            tmp.add(p.getY());
-            tmp.add(p.getX());
-            invalidJSON.add(tmp);
+            tmp.put(p.getY());
+            tmp.put(p.getX());
+            invalidJSON.put(tmp);
         }
 
         jsonObject.put("filename", "./sample.tiff");
@@ -57,7 +59,7 @@ public class JSONWriter {
         jsonObject.put("invalid", invalidJSON);
         try {
             FileWriter file = new FileWriter(filePath);
-            file.write(jsonObject.toJSONString());
+            file.write(jsonObject.toString());
             file.close();
         } catch (IOException e) {
             e.printStackTrace();

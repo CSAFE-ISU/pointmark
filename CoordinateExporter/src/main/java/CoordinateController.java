@@ -1,6 +1,5 @@
 import ij.ImagePlus;
 import ij.plugin.frame.RoiManager;
-import org.json.simple.parser.ParseException;
 import java.io.IOException;
 
 /**
@@ -21,8 +20,6 @@ public class CoordinateController {
             reader.placeCoords(coords);
         }
         catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (ParseException e) {
             throw new RuntimeException(e);
         }
     }

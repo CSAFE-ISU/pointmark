@@ -3,10 +3,14 @@ import ij.ImagePlus;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+import org.json.XMLParserConfiguration;
+//import org.json.simple.JSONArray;
+//import org.json.simple.JSONObject;
+//import org.json.simple.parser.JSONParser;
+//import org.json.simple.parser.ParseException;
 import java.awt.*;
 import java.io.*;
 
@@ -23,8 +27,8 @@ class JSONReader {
         this.img = img;
     }
 
-    public RoiManager importCoordsFromJSON(String filePath) throws IOException, ParseException, NullPointerException {
-        JSONObject reader = (JSONObject)(new JSONParser().parse(new FileReader(filePath)));
+    public RoiManager importCoordsFromJSON(String filePath) throws IOException, NullPointerException {
+        JSONObject reader  = new JSONObject(new JSONTokener(new FileReader(filePath)));
         RoiManager coords = RoiManager.getRoiManager(); //Opens RoI Manager if not already open
         coords.reset(); //Clears the previously open RoIs
 
@@ -44,7 +48,7 @@ class JSONReader {
     public PointRoi fillROI(JSONArray points, PointRoi roi, boolean isValid) {
         String title = isValid ? "valid" : "invalid";
 
-        for (int i = 0; i < points.size(); i++) { //obtains point values
+        for (int i = 0; i < points.length(); i++) { //obtains point values
             JSONArray array = (JSONArray) points.get(i);
             double row = ((Number) array.get(1)).doubleValue();
             double col = ((Number) array.get(0)).doubleValue();
