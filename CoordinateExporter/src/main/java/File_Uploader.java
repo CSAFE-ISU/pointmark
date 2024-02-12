@@ -74,11 +74,6 @@ public class File_Uploader implements PlugIn {
         panel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_TAB) { //tab to toggle selected ROI
-                    RoiManager coords = RoiManager.getRoiManager();
-                    coords.select(img, coords.getSelectedIndex() == 0 ? 1 : 0);
-                }
-
                 if (e.getKeyCode() == KeyEvent.VK_Q && ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)
                         && ((e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0)) {
                     openForExport(); //ctrl + shift + Q to open export
@@ -90,6 +85,7 @@ public class File_Uploader implements PlugIn {
     }
 
     public void openForImport() {
+        log.setText("Log: Importing...");
         imported.setCurrentDirectory(new File(System.getProperty("user.home")));
         imported.setFileFilter(new FileNameExtensionFilter("JSON files", "json"));
         int returnValue = imported.showOpenDialog(null);
@@ -99,11 +95,11 @@ public class File_Uploader implements PlugIn {
             String filePath = file.getAbsolutePath();
             coordControl.importCoords(filePath);
             importText.setText("Imported: " + filePath);
-            log.setText("Log: Importing...");
         }
     }
 
     public void openForExport() {
+        log.setText("Log: Exporting...");
         exported.setCurrentDirectory(new File(System.getProperty("user.home")));
         exported.setFileFilter(new FileNameExtensionFilter("JSON files", "json"));
         int returnValue = exported.showOpenDialog(null);
@@ -114,7 +110,6 @@ public class File_Uploader implements PlugIn {
             try {
                 coordControl.exportCoords(filePath);
                 exportText.setText("Exported: " + filePath);
-                log.setText("Log: Exporting...");
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }

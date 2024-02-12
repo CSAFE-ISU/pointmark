@@ -11,7 +11,7 @@ import java.util.*;
 
 /**
  * Listens for a double click, and will search out the nearest point within a certain range to swap
- * its ROI between the "valid" and "invalid" ROIs.
+ * its ROI between the "valid" and "invalid" ROIs, or will swap the selected ROI.
  */
 public class PointSwapListener extends PointListener implements KeyListener {
 
@@ -27,6 +27,7 @@ public class PointSwapListener extends PointListener implements KeyListener {
 
     @Override
     public void mouseClicked(MouseEvent e) {
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         if (qKeyPressed && this.toString().equals(address)) {
             changeClosestPoint(e.getX(), e.getY());
         }
@@ -99,8 +100,10 @@ public class PointSwapListener extends PointListener implements KeyListener {
     }
 
     @Override
-    public void keyTyped(KeyEvent e) {
-        //NULL
+    public void keyTyped(KeyEvent e) { //Putting this here since it's just a single key press
+        if ((e.getKeyChar() == 'g' || e.getKeyChar() == 'G') && this.toString().equals(address)) {
+            roiManager.select(img, roiManager.getSelectedIndex() == 0 ? 1 : 0);
+        }
     }
 
     @Override
