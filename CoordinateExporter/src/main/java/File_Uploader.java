@@ -120,6 +120,7 @@ public class File_Uploader implements PlugIn {
             String filePath = file.getAbsolutePath();
             coordController.importCoords(img, img2, filePath);
             importText.setText("Imported: " + filePath);
+            log.setText("Log:");
         }
     }
 
@@ -135,6 +136,7 @@ public class File_Uploader implements PlugIn {
             try {
                 coordController.exportCoords(filePath);
                 exportText.setText("Exported: " + filePath);
+                log.setText("Log:");
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
