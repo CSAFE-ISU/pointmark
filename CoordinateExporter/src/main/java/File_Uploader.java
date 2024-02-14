@@ -41,12 +41,6 @@ public class File_Uploader implements PlugIn {
     ImagePlus img2;
 
     public File_Uploader() {
-        String trace = "";
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for (StackTraceElement element : stackTrace) {
-            trace += "\n" + element.toString();
-        }
-        IJ.log("Stack trace: " + trace);
 
         coordController = new CoordinateController();
         int[] idList = WindowManager.getIDList();
@@ -72,31 +66,25 @@ public class File_Uploader implements PlugIn {
 
         ImageCanvas canvas1 = img.getWindow().getCanvas();
         canvas1.setFocusable(true);
-        //https://stackoverflow.com/questions/32205496/actionlistener-code-triggered-twice
-        //for solution
-        PointSwapListener p = new PointSwapListener(log, false);
-        PointDragListener pd = new PointDragListener(log, false);
-        if (canvas1.getMouseListeners().length < 1)
+        PointSwapListener p = new PointSwapListener(log);
+        PointDragListener pd = new PointDragListener(log);
+        if (canvas1.getMouseListeners().length <= 1) //ImageJ already includes on listener
             canvas1.addMouseListener(p);
-        if (canvas1.getMouseListeners().length < 2)
+        if (canvas1.getMouseListeners().length <= 2)
             canvas1.addMouseListener(pd);
-        if (canvas1.getKeyListeners().length < 1)
+        if (canvas1.getKeyListeners().length <= 1)
             canvas1.addKeyListener(p);
-        IJ.log("Canvas1 has " + canvas1.getMouseListeners().length + " mouse listeners and "
-                + canvas1.getKeyListeners().length + " key listeners.");
 
         ImageCanvas canvas2 = img2.getWindow().getCanvas();
         canvas2.setFocusable(true);
-        PointSwapListener p2 = new PointSwapListener(log, true);
-        PointDragListener pd2 = new PointDragListener(log, true);
-        if (canvas2.getMouseListeners().length < 1)
+        PointSwapListener p2 = new PointSwapListener(log);
+        PointDragListener pd2 = new PointDragListener(log);
+        if (canvas2.getMouseListeners().length <= 1)
             canvas2.addMouseListener(p2);
-        if (canvas2.getMouseListeners().length < 2)
+        if (canvas2.getMouseListeners().length <= 2)
             canvas2.addMouseListener(pd2);
-        if (canvas1.getKeyListeners().length < 1)
+        if (canvas1.getKeyListeners().length <= 1)
             canvas2.addKeyListener(p2);
-        IJ.log("Canvas2 has " + canvas2.getMouseListeners().length + " mouse listeners and "
-                + canvas2.getKeyListeners().length + " key listeners.");
 
         importFile.setFocusable(false);
         exportFile.setFocusable(false);

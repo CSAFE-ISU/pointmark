@@ -15,25 +15,19 @@ import java.util.*;
  */
 public class PointSwapListener extends PointListener implements KeyListener {
 
-    private static String address;
-
-    private static String address2;
-
     private boolean qKeyPressed;
 
-    public PointSwapListener(JLabel log, boolean second) {
+    public PointSwapListener(JLabel log) {
         super(log);
-        if (second) {
-            address2 = this.toString();
-        }
-        address = this.toString();
         qKeyPressed = false;
     }
 
     @Override
     public void mouseClicked(MouseEvent e) {
         KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-        if (qKeyPressed && (this.toString().equals(address) || this.toString().equals(address2))) {
+        IJ.log("Mouse clicked...");
+        if (qKeyPressed) {
+            IJ.log("... and q pressed!");
             changeClosestPoint(e.getX(), e.getY());
         }
     }
@@ -106,8 +100,8 @@ public class PointSwapListener extends PointListener implements KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) { //Putting this here since it's just a single key press
-        if ((e.getKeyChar() == 'g' || e.getKeyChar() == 'G') &&
-                (this.toString().equals(address) || this.toString().equals(address2))) {
+        if ((e.getKeyChar() == 'g' || e.getKeyChar() == 'G')) {
+            IJ.log("G typed.");
             roiManager.select(img, roiManager.getSelectedIndex() == 0 ? 1 : 0);
         }
     }
@@ -115,6 +109,7 @@ public class PointSwapListener extends PointListener implements KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         if (!qKeyPressed && (e.getKeyChar() == 'q' || e.getKeyChar() == 'Q')) {
+            IJ.log("Q pressed.");
             qKeyPressed = true;
         }
     }

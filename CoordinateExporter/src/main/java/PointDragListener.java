@@ -14,42 +14,18 @@ import java.awt.event.MouseEvent;
  */
 public class PointDragListener extends PointListener {
 
-    private static String address;
-
-    private static String address2;
-
     Point[] initialState;
 
     Point mouse;
 
     int selected;
 
-    boolean isSecond;
-
-    public PointDragListener(JLabel log, boolean second) {
+    public PointDragListener(JLabel log) {
         super(log);
-
-        String name = "";
-        if (second) {
-            name = "#2";
-            address2 = this.toString();
-            IJ.log("address for " + name + " is " + address2);
-            isSecond = true;
-        }
-        else {
-            name = "#1";
-            address = this.toString();
-            IJ.log("address for " + name + " is " + address);
-            isSecond = false;
-        }
     }
 
     @Override
     public void mousePressed(MouseEvent e) { //This doesn't seem to work with mouseDragged.
-        if (!this.toString().equals(address) && !this.toString().equals(address2)) {
-            IJ.log(this.toString() + " was pressed");
-            return;
-        }
 
         selected = roiManager.getSelectedIndex();
 
@@ -63,10 +39,6 @@ public class PointDragListener extends PointListener {
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (!this.toString().equals(address) && !this.toString().equals(address2)) {
-            IJ.log(this.toString() + " was released");
-            return;
-        }
 
         Point mouseNew = MouseInfo.getPointerInfo().getLocation();
         if (mouse.equals(mouseNew)) {
