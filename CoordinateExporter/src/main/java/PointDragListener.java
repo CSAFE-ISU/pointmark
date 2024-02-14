@@ -20,8 +20,10 @@ public class PointDragListener extends PointListener {
 
     int selected;
 
-    public PointDragListener(JLabel log) {
-        super(log);
+    PointDragListener sister;
+
+    public PointDragListener(JLabel log, ImagePlus img) {
+        super(log, img);
     }
 
     @Override
@@ -35,10 +37,14 @@ public class PointDragListener extends PointListener {
         initialState = initialRoi.getContainedPoints();
 
         mouse = MouseInfo.getPointerInfo().getLocation();
+
+        IJ.log(this + "'s MouseDrag PRESSED.");
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
+
+        IJ.log(this + "'s MouseDrag RELEASED.");
 
         Point mouseNew = MouseInfo.getPointerInfo().getLocation();
         if (mouse.equals(mouseNew)) {
@@ -67,10 +73,19 @@ public class PointDragListener extends PointListener {
             }
 
             resetROI(initialStateROI, selected);
+            //sister.resetROI(initialStateROI, selected);
 
             resetImage(selected);
+            //sister.resetImage(selected);
 
             log.setText("Log: No moving points!");
         }
+    }
+
+    public void addSister(PointListener sister) {
+        if (!this.getClass().equals(sister.getClass())) {
+            return;
+        }
+        this.sister = (PointDragListener)sister;
     }
 }

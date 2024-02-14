@@ -18,9 +18,9 @@ public abstract class PointListener extends MouseAdapter {
 
     protected JLabel log;
 
-    public PointListener(JLabel log) {
+    public PointListener(JLabel log, ImagePlus img) {
         roiManager = RoiManager.getRoiManager();
-        img = IJ.getImage();
+        this.img = img;
         this.log = log;
     }
 
@@ -45,5 +45,7 @@ public abstract class PointListener extends MouseAdapter {
         img.updateAndDraw();
         roiManager.select(selected);
     }
+
+    public abstract void addSister(PointListener sister);
 
 }
