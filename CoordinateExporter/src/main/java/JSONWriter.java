@@ -9,24 +9,21 @@ import java.awt.*;
 import java.io.*;
 
 /**
- * Exports the current iteration of the valid (index 0 in the ROI Manager) and invalid (index 1)
+ * Exports the current iteration of the set_1 (index 0 in the ROI Manager) and set_2 (index 1)
  * ROIs to a JSON file. Note that any changes must first be saved in the ROI Manager by having
  * the ROI selected and clicking "Update."
  */
 public class JSONWriter {
 
-    ImagePlus img;
-
-    public JSONWriter(ImagePlus img) {
-        this.img = img;
+    public JSONWriter() {
     }
 
     public void exportCoordsAsJSON(String filePath) {
 
         JSONObject jsonObject = new JSONObject();
 
-        JSONArray validJSON = new JSONArray();
-        JSONArray invalidJSON = new JSONArray();
+        JSONArray set1_JSON = new JSONArray();
+        JSONArray set2_JSON = new JSONArray();
         JSONArray tmp;
 
         RoiManager roiManager = RoiManager.getRoiManager();
@@ -35,28 +32,28 @@ public class JSONWriter {
             throw new RuntimeException("There are no RoIs for this image.");
         }
 
-        PointRoi validPoints = (PointRoi)roiManager.getRoi(0);
-        PointRoi invalidPoints = (PointRoi)roiManager.getRoi(1);
+        PointRoi set1_Points = (PointRoi)roiManager.getRoi(0);
+        PointRoi set2_Points = (PointRoi)roiManager.getRoi(1);
 
-        for (Point p : validPoints) {
+        for (Point p : set1_Points) {
             tmp = new JSONArray();
             tmp.put(p.getY()); //row and then column
             tmp.put(p.getX());
-            validJSON.put(tmp);
+            set1_JSON.put(tmp);
         }
 
-        for (Point p : invalidPoints) {
+        for (Point p : set2_Points) {
 
             tmp = new JSONArray();
             tmp.put(p.getY());
             tmp.put(p.getX());
-            invalidJSON.put(tmp);
+            set2_JSON.put(tmp);
         }
 
         jsonObject.put("filename", "./sample.tiff");
         jsonObject.put("etor", "FAST");
-        jsonObject.put("valid", validJSON);
-        jsonObject.put("invalid", invalidJSON);
+        jsonObject.put("set_1", set1_JSON);
+        jsonObject.put("set_2", set2_JSON);
         try {
             FileWriter file = new FileWriter(filePath);
             file.write(jsonObject.toString());

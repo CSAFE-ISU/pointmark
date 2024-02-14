@@ -1,5 +1,6 @@
 import ij.IJ;
 import ij.ImagePlus;
+import ij.WindowManager;
 import ij.gui.ImageCanvas;
 import ij.plugin.PlugIn;
 import ij.plugin.frame.RoiManager;
@@ -10,13 +11,14 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Main class of the plugin, takes in an import and export file. Underscore required for ImageJ2 plugin convention.
  */
 public class File_Uploader implements PlugIn {
 
-    CoordinateController coordControl;
+    CoordinateController coordController;
 
     private JButton importFile;
 
@@ -34,13 +36,25 @@ public class File_Uploader implements PlugIn {
 
     private final JFileChooser exported;
 
+    ImagePlus img;
+
+    ImagePlus img2;
+
     public File_Uploader() {
-        ImagePlus img = IJ.getImage();
+        String trace = "";
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        for (StackTraceElement element : stackTrace) {
+            trace += "\n" + element.toString();
+        }
+        IJ.log("Stack trace: " + trace);
+
+        coordController = new CoordinateController();
+        int[] idList = WindowManager.getIDList();
+        img = WindowManager.getImage(idList[0]);
+        img2 = WindowManager.getImage(idList[1]);
 
         imported = new JFileChooser();
         exported = new JFileChooser();
-
-        coordControl = new CoordinateController(img);
 
         importFile.addActionListener(new ActionListener() {
             @Override
@@ -56,15 +70,33 @@ public class File_Uploader implements PlugIn {
             }
         });
 
-        ImagePlus imp = IJ.getImage();
+        ImageCanvas canvas1 = img.getWindow().getCanvas();
+        canvas1.setFocusable(true);
+        //https://stackoverflow.com/questions/32205496/actionlistener-code-triggered-twice
+        //for solution
+        PointSwapListener p = new PointSwapListener(log, false);
+        PointDragListener pd = new PointDragListener(log, false);
+        if (canvas1.getMouseListeners().length < 1)
+            canvas1.addMouseListener(p);
+        if (canvas1.getMouseListeners().length < 2)
+            canvas1.addMouseListener(pd);
+        if (canvas1.getKeyListeners().length < 1)
+            canvas1.addKeyListener(p);
+        IJ.log("Canvas1 has " + canvas1.getMouseListeners().length + " mouse listeners and "
+                + canvas1.getKeyListeners().length + " key listeners.");
 
-        ImageCanvas canvas = imp.getWindow().getCanvas();
-        canvas.setFocusable(true);
-        PointSwapListener p = new PointSwapListener(log);
-        PointDragListener pd = new PointDragListener(log);
-        canvas.addMouseListener(p);
-        canvas.addKeyListener(p);
-        canvas.addMouseListener(pd);
+        ImageCanvas canvas2 = img2.getWindow().getCanvas();
+        canvas2.setFocusable(true);
+        PointSwapListener p2 = new PointSwapListener(log, true);
+        PointDragListener pd2 = new PointDragListener(log, true);
+        if (canvas2.getMouseListeners().length < 1)
+            canvas2.addMouseListener(p2);
+        if (canvas2.getMouseListeners().length < 2)
+            canvas2.addMouseListener(pd2);
+        if (canvas1.getKeyListeners().length < 1)
+            canvas2.addKeyListener(p2);
+        IJ.log("Canvas2 has " + canvas2.getMouseListeners().length + " mouse listeners and "
+                + canvas2.getKeyListeners().length + " key listeners.");
 
         importFile.setFocusable(false);
         exportFile.setFocusable(false);
@@ -93,7 +125,7 @@ public class File_Uploader implements PlugIn {
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             File file = imported.getSelectedFile();
             String filePath = file.getAbsolutePath();
-            coordControl.importCoords(filePath);
+            coordController.importCoords(img, img2, filePath);
             importText.setText("Imported: " + filePath);
         }
     }
@@ -108,7 +140,7 @@ public class File_Uploader implements PlugIn {
             File file = exported.getSelectedFile();
             String filePath = file.getAbsolutePath();
             try {
-                coordControl.exportCoords(filePath);
+                coordController.exportCoords(filePath);
                 exportText.setText("Exported: " + filePath);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
@@ -119,14 +151,11 @@ public class File_Uploader implements PlugIn {
     public void run(String arg) {
         JFrame frame = new JFrame("FileUploader");
 
-        frame.setContentPane(new File_Uploader().panel);
+        //frame.setContentPane(new File_Uploader().panel);
+        frame.setContentPane(this.panel);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.pack(); //sizes the window
         frame.setVisible(true);
-    }
-
-    public static void main(String[] args) {
-
     }
 
     {

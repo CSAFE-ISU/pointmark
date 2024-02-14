@@ -7,17 +7,14 @@ import java.io.IOException;
  */
 public class CoordinateController {
 
-    ImagePlus img;
-
-    public CoordinateController(ImagePlus img) {
-        this.img = img;
+    public CoordinateController() {
     }
 
-    public void importCoords(String filePath) {
+    public void importCoords(ImagePlus img, ImagePlus img2, String filePath) {
         try {
-            JSONReader reader = new JSONReader(img);
-            RoiManager coords = reader.importCoordsFromJSON(filePath);
-            reader.placeCoords(coords);
+            JSONReader reader = new JSONReader();
+            RoiManager coords = reader.importCoordsFromJSON(img, img2, filePath);
+            reader.placeCoords(img, img2, coords);
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -25,7 +22,7 @@ public class CoordinateController {
     }
 
     public void exportCoords(String filePath) throws IOException {
-        JSONWriter writer = new JSONWriter(img);
+        JSONWriter writer = new JSONWriter();
         writer.exportCoordsAsJSON(filePath);
     }
 }
