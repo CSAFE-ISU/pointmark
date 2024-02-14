@@ -66,7 +66,7 @@ public class File_Uploader implements PlugIn {
 
         ImageCanvas canvas1 = img.getWindow().getCanvas();
         canvas1.setFocusable(true);
-        PointSwapListener p = new PointSwapListener(log, img);
+        PointSwapListener p = new PointSwapListener(log, img, 0);
         PointDragListener pd = new PointDragListener(log, img);
         if (canvas1.getMouseListeners().length <= 1) //ImageJ already includes on listener
             canvas1.addMouseListener(p);
@@ -77,7 +77,7 @@ public class File_Uploader implements PlugIn {
 
         ImageCanvas canvas2 = img2.getWindow().getCanvas();
         canvas2.setFocusable(true);
-        PointSwapListener p2 = new PointSwapListener(log, img2);
+        PointSwapListener p2 = new PointSwapListener(log, img2, 1);
         PointDragListener pd2 = new PointDragListener(log, img2);
         if (canvas2.getMouseListeners().length <= 1)
             canvas2.addMouseListener(p2);

@@ -19,9 +19,12 @@ public class PointSwapListener extends PointListener implements KeyListener {
 
     PointSwapListener sister;
 
-    public PointSwapListener(JLabel log, ImagePlus img) {
+    int usable_ROI;
+
+    public PointSwapListener(JLabel log, ImagePlus img, int roi) {
         super(log, img);
         qKeyPressed = false;
+        usable_ROI = roi;
     }
 
     @Override
@@ -34,6 +37,7 @@ public class PointSwapListener extends PointListener implements KeyListener {
 
     public void changeClosestPoint(int x, int y) {
         int selected = roiManager.getSelectedIndex();
+        if (selected != usable_ROI) {return;}
         PointRoi pr = (PointRoi)roiManager.getRoi(selected);
 
         double magnification = img.getCanvas().getMagnification();
