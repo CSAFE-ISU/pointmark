@@ -83,7 +83,7 @@ public class File_Uploader implements PlugIn {
             canvas2.addMouseListener(p2);
         if (canvas2.getMouseListeners().length <= 2)
             canvas2.addMouseListener(pd2);
-        if (canvas1.getKeyListeners().length <= 1)
+        if (canvas2.getKeyListeners().length <= 1)
             canvas2.addKeyListener(p2);
 
         importFile.setFocusable(false);
