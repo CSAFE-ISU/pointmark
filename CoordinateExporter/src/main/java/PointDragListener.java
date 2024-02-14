@@ -37,14 +37,10 @@ public class PointDragListener extends PointListener {
         initialState = initialRoi.getContainedPoints();
 
         mouse = MouseInfo.getPointerInfo().getLocation();
-
-        IJ.log(this + "'s MouseDrag PRESSED.");
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
-
-        IJ.log(this + "'s MouseDrag RELEASED.");
 
         Point mouseNew = MouseInfo.getPointerInfo().getLocation();
         if (mouse.equals(mouseNew)) {
