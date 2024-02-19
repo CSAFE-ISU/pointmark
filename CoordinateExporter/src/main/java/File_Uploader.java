@@ -50,10 +50,44 @@ public class File_Uploader implements PlugIn {
         imported = new JFileChooser();
         exported = new JFileChooser();
 
+        ImageCanvas canvas1 = img.getWindow().getCanvas();
+        canvas1.setFocusable(true);
+        PointAddListener pa = new PointAddListener(log, img, 0);
+        PointDragListener pd = new PointDragListener(log, img);
+        if (canvas1.getMouseListeners().length <= 1)
+            canvas1.addMouseListener(pa);
+        if (canvas1.getMouseListeners().length <= 2)
+            canvas1.addMouseListener(pd);
+        //IJ.log(Arrays.toString(canvas1.getMouseListeners()));
+
+        ImageCanvas canvas2 = img2.getWindow().getCanvas();
+        canvas2.setFocusable(true);
+        PointAddListener pa2 = new PointAddListener(log, img2, 1);
+        PointDragListener pd2 = new PointDragListener(log, img2);
+        if (canvas2.getMouseListeners().length <= 1)
+            canvas2.addMouseListener(pa2);
+        if (canvas2.getMouseListeners().length <= 2)
+            canvas2.addMouseListener(pd2);
+        //IJ.log(Arrays.toString(canvas2.getMouseListeners()));
+
+        pd.addSister(pd2);
+        pd2.addSister(pd);
+        pa.addSister(pa2);
+        pa2.addSister(pa);
+
+        importFile.setFocusable(false);
+        exportFile.setFocusable(false);
+        panel.setFocusable(true); //sets focus to the log panel itself
+        panel.requestFocusInWindow();
+
         importFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                openForImport();
+                boolean validImport = openForImport(); //ctrl + Q to open import
+                if (validImport) {
+                    pa.initInvalidROI();
+                    pa2.initInvalidROI();
+                }
             }
         });
 
@@ -64,38 +98,6 @@ public class File_Uploader implements PlugIn {
             }
         });
 
-        ImageCanvas canvas1 = img.getWindow().getCanvas();
-        canvas1.setFocusable(true);
-        PointSwapListener p = new PointSwapListener(log, img, 0);
-        PointDragListener pd = new PointDragListener(log, img);
-        if (canvas1.getMouseListeners().length <= 1) //ImageJ already includes on listener
-            canvas1.addMouseListener(p);
-        if (canvas1.getMouseListeners().length <= 2)
-            canvas1.addMouseListener(pd);
-        if (canvas1.getKeyListeners().length <= 1)
-            canvas1.addKeyListener(p);
-
-        ImageCanvas canvas2 = img2.getWindow().getCanvas();
-        canvas2.setFocusable(true);
-        PointSwapListener p2 = new PointSwapListener(log, img2, 1);
-        PointDragListener pd2 = new PointDragListener(log, img2);
-        if (canvas2.getMouseListeners().length <= 1)
-            canvas2.addMouseListener(p2);
-        if (canvas2.getMouseListeners().length <= 2)
-            canvas2.addMouseListener(pd2);
-        if (canvas2.getKeyListeners().length <= 1)
-            canvas2.addKeyListener(p2);
-
-        p.addSister(p2);
-        p2.addSister(p);
-        pd.addSister(pd2);
-        pd2.addSister(pd);
-
-        importFile.setFocusable(false);
-        exportFile.setFocusable(false);
-        panel.setFocusable(true); //sets focus to the log panel itself
-        panel.requestFocusInWindow();
-
         panel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -103,13 +105,17 @@ public class File_Uploader implements PlugIn {
                         && ((e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0)) {
                     openForExport(); //ctrl + shift + Q to open export
                 } else if (e.getKeyCode() == KeyEvent.VK_Q && ((e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0)) {
-                    openForImport(); //ctrl + Q to open import
+                    boolean validImport = openForImport(); //ctrl + Q to open import
+                    if (validImport) {
+                        pa.initInvalidROI();
+                        pa2.initInvalidROI();
+                    }
                 }
             }
         });
     }
 
-    public void openForImport() {
+    public boolean openForImport() {
         log.setText("Log: Importing...");
         imported.setCurrentDirectory(new File(System.getProperty("user.home")));
         imported.setFileFilter(new FileNameExtensionFilter("JSON files", "json"));
@@ -121,7 +127,9 @@ public class File_Uploader implements PlugIn {
             coordController.importCoords(img, img2, filePath);
             importText.setText("Imported: " + filePath);
             log.setText("Log:");
+            return true;
         }
+        return false;
     }
 
     public void openForExport() {

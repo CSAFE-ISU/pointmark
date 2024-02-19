@@ -51,6 +51,7 @@ class JSONReader {
             double col = ((Number) array.get(0)).doubleValue();
             roi.addUserPoint(img, row, col);
         }
+
         roi.setPointType(2); //sets values for the ROI itself
         roi.setSize(3);
         roi.setName(title);
@@ -65,8 +66,7 @@ class JSONReader {
     public void placeCoords(ImagePlus img, ImagePlus img2, RoiManager coords) throws IOException {
         img.setRoi(coords.getRoi(0), true);
         img2.setRoi(coords.getRoi(1), true);
-        coords.select(img, 0);
-        coords.select(img2, 1);
+        coords.select(img2, 0);
     }
 
 }

@@ -29,13 +29,13 @@ public abstract class PointListener extends MouseAdapter {
             pointRoi.setStrokeColor(new Color(0, 0, 255));
             pointRoi.setPointType(2);
             pointRoi.setSize(3);
-            pointRoi.setName("valid");
+            pointRoi.setName("set_1");
         }
         else {
             pointRoi.setStrokeColor(new Color(255, 255, 0));
             pointRoi.setPointType(2);
             pointRoi.setSize(3);
-            pointRoi.setName("invalid");
+            pointRoi.setName("set_2");
         }
 
         roiManager.setRoi(pointRoi, selected);
