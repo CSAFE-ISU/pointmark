@@ -90,7 +90,9 @@ public class File_Uploader implements PlugIn {
                 boolean validImport = openForImport(); //ctrl + Q to open import
                 if (validImport) {
                     pa.initInvalidROI();
+                    pa.updatePoints();
                     pa2.initInvalidROI();
+                    pa2.updatePoints();
                 }
             }
         });
@@ -112,7 +114,9 @@ public class File_Uploader implements PlugIn {
                     boolean validImport = openForImport(); //ctrl + Q to open import
                     if (validImport) {
                         pa.initInvalidROI();
+                        pa.updatePoints();
                         pa2.initInvalidROI();
+                        pa2.updatePoints();
                     }
                 }
             }

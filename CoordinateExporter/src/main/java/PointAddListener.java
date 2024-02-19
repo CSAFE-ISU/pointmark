@@ -19,12 +19,15 @@ public class PointAddListener extends PointListener {
 
     PointRoi invalidROI;
 
+    Point[] originalPoints;
+
     PointAddListener sister;
 
     public PointAddListener(JLabel log, ImagePlus img, int num) {
         super(log, img);
         this.invalidROINum = num;
         invalidCount = 0;
+        originalPoints = new Point[0];
     }
 
     @Override
@@ -34,7 +37,8 @@ public class PointAddListener extends PointListener {
 
         if (selected != invalidROINum) {
             //To update the values to be checked as invalid when the other image's ROI is added to
-            updateSisterInvalid(selected);
+            updateSisterInfo(selected);
+            updatePoints();
             return;
         }
 
@@ -44,6 +48,14 @@ public class PointAddListener extends PointListener {
             PointRoi invalidNew = new PointRoi();
             for (int i = 0; i < points.length - 1; i++) {
                 invalidNew.addPoint(points[i].getX(), points[i].getY());
+            }
+            invalidROI = invalidNew;
+        }
+        else if (invalidCount > points.length) {
+            PointRoi invalidNew = new PointRoi();
+            Point[] sisterPoints = sister.originalPoints;
+            for (int i = 0; i < sisterPoints.length; i++) {
+                invalidNew.addPoint(sisterPoints[i].getX(), sisterPoints[i].getY());
             }
             invalidROI = invalidNew;
         }
@@ -57,7 +69,7 @@ public class PointAddListener extends PointListener {
 
     public void initInvalidROI() {
         invalidROI = (PointRoi)roiManager.getRoi(invalidROINum == 0 ? 0 : 1);
-        invalidCount = invalidROI.getSize();
+        invalidCount = invalidROI.getContainedPoints().length;
     }
 
     public void addSister(PointListener sister) {
@@ -67,7 +79,12 @@ public class PointAddListener extends PointListener {
         this.sister = (PointAddListener)sister;
     }
 
-    public void updateSisterInvalid(int selected) {
+    public void updateSisterInfo(int selected) {
         sister.invalidCount = roiManager.getRoi(selected).size();
+    }
+
+    public void updatePoints() {
+        int selected = invalidROINum == 0 ? 1 : 0;
+        originalPoints = roiManager.getRoi(selected).getContainedPoints();
     }
 }
