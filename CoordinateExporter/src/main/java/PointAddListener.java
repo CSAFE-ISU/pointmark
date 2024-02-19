@@ -35,6 +35,8 @@ public class PointAddListener extends PointListener {
 
         if (selected != invalidROINum) {
             //IJ.log("This is your ROI!");
+            //To update the values to be checked as invalid when the other image's ROI is added to
+            updateSisterInvalid(selected);
             return;
         }
 
@@ -72,5 +74,9 @@ public class PointAddListener extends PointListener {
             return;
         }
         this.sister = (PointAddListener)sister;
+    }
+
+    public void updateSisterInvalid(int selected) {
+        sister.invalidCount = roiManager.getRoi(selected).size();
     }
 }
