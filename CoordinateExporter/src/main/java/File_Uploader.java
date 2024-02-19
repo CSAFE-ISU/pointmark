@@ -80,6 +80,10 @@ public class File_Uploader implements PlugIn {
         panel.setFocusable(true); //sets focus to the log panel itself
         panel.requestFocusInWindow();
 
+        coordController.initROIs(img, img2);
+        pa.initInvalidROI();
+        pa2.initInvalidROI();
+
         importFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

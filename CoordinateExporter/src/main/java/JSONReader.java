@@ -24,6 +24,21 @@ class JSONReader {
     public JSONReader() {
     }
 
+    public RoiManager initROIs(ImagePlus img, ImagePlus img2) throws NullPointerException {
+        RoiManager coords = RoiManager.getRoiManager(); //Opens RoI Manager if not already open
+        coords.reset(); //Clears the previously open RoIs
+
+        PointRoi roi = new PointRoi();
+        coords.add(fillROI(img, null, roi, true), 0); //identifier 0
+
+        PointRoi roi2 = new PointRoi();
+        coords.add(fillROI(img2, null, roi2, false), 1); //identifier 1
+
+        coords.runCommand("Show All");
+
+        return coords;
+    }
+
     public RoiManager importCoordsFromJSON(ImagePlus img, ImagePlus img2, String filePath) throws IOException, NullPointerException {
         JSONObject reader  = new JSONObject(new JSONTokener(new FileReader(filePath)));
         RoiManager coords = RoiManager.getRoiManager(); //Opens RoI Manager if not already open
@@ -45,11 +60,13 @@ class JSONReader {
     public PointRoi fillROI(ImagePlus img, JSONArray points, PointRoi roi, boolean isSet1) {
         String title = isSet1 ? "set_1" : "set_2";
 
-        for (int i = 0; i < points.length(); i++) { //obtains point values
-            JSONArray array = (JSONArray) points.get(i);
-            double row = ((Number) array.get(1)).doubleValue();
-            double col = ((Number) array.get(0)).doubleValue();
-            roi.addUserPoint(img, row, col);
+        if (points != null) {
+            for (int i = 0; i < points.length(); i++) { //obtains point values
+                JSONArray array = (JSONArray) points.get(i);
+                double row = ((Number) array.get(1)).doubleValue();
+                double col = ((Number) array.get(0)).doubleValue();
+                roi.addUserPoint(img, row, col);
+            }
         }
 
         roi.setPointType(2); //sets values for the ROI itself

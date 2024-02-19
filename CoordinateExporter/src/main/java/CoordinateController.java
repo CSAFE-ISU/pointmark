@@ -10,6 +10,17 @@ public class CoordinateController {
     public CoordinateController() {
     }
 
+    public void initROIs(ImagePlus img, ImagePlus img2) {
+        try {
+            JSONReader reader = new JSONReader();
+            RoiManager coords = reader.initROIs(img, img2);
+            reader.placeCoords(img, img2, coords);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void importCoords(ImagePlus img, ImagePlus img2, String filePath) {
         try {
             JSONReader reader = new JSONReader();
