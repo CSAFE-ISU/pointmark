@@ -15,20 +15,17 @@ import java.util.*;
  */
 public class PointSwapListener extends PointListener implements KeyListener {
 
-    private static String address;
-
     private boolean qKeyPressed;
 
     public PointSwapListener(JLabel log) {
         super(log);
-        address = this.toString();
         qKeyPressed = false;
     }
 
     @Override
     public void mouseClicked(MouseEvent e) {
         KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-        if (qKeyPressed && this.toString().equals(address)) {
+        if (qKeyPressed) {
             changeClosestPoint(e.getX(), e.getY());
         }
     }
@@ -101,7 +98,7 @@ public class PointSwapListener extends PointListener implements KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) { //Putting this here since it's just a single key press
-        if ((e.getKeyChar() == 'g' || e.getKeyChar() == 'G') && this.toString().equals(address)) {
+        if ((e.getKeyChar() == 'g' || e.getKeyChar() == 'G')) {
             roiManager.select(img, roiManager.getSelectedIndex() == 0 ? 1 : 0);
         }
     }

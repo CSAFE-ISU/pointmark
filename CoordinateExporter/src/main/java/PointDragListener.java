@@ -14,8 +14,6 @@ import java.awt.event.MouseEvent;
  */
 public class PointDragListener extends PointListener {
 
-    private static String address;
-
     Point[] initialState;
 
     Point mouse;
@@ -24,14 +22,10 @@ public class PointDragListener extends PointListener {
 
     public PointDragListener(JLabel log) {
         super(log);
-        address = this.toString();
     }
 
     @Override
     public void mousePressed(MouseEvent e) { //This doesn't seem to work with mouseDragged.
-        if (!this.toString().equals(address)) {
-            return;
-        }
 
         selected = roiManager.getSelectedIndex();
 
@@ -45,9 +39,6 @@ public class PointDragListener extends PointListener {
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (!this.toString().equals(address)) {
-            return;
-        }
 
         Point mouseNew = MouseInfo.getPointerInfo().getLocation();
         if (mouse.equals(mouseNew)) {

@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Main class of the plugin, takes in an import and export file. Underscore required for ImageJ2 plugin convention.
@@ -62,9 +63,12 @@ public class File_Uploader implements PlugIn {
         canvas.setFocusable(true);
         PointSwapListener p = new PointSwapListener(log);
         PointDragListener pd = new PointDragListener(log);
-        canvas.addMouseListener(p);
-        canvas.addKeyListener(p);
-        canvas.addMouseListener(pd);
+        if (canvas.getMouseListeners().length <= 1)
+            canvas.addMouseListener(p);
+        if (canvas.getMouseListeners().length <= 2)
+            canvas.addMouseListener(pd);
+        if (canvas.getKeyListeners().length <= 1)
+            canvas.addKeyListener(p);
 
         importFile.setFocusable(false);
         exportFile.setFocusable(false);
