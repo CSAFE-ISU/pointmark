@@ -1,5 +1,6 @@
 import ij.ImagePlus;
 import ij.plugin.frame.RoiManager;
+
 import java.io.IOException;
 
 /**
@@ -15,8 +16,7 @@ public class CoordinateController {
             JSONReader reader = new JSONReader();
             RoiManager coords = reader.initROIs(img, img2);
             reader.placeCoords(img, img2, coords);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -26,8 +26,7 @@ public class CoordinateController {
             JSONReader reader = new JSONReader();
             RoiManager coords = reader.importCoordsFromJSON(img, img2, filePath);
             reader.placeCoords(img, img2, coords);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

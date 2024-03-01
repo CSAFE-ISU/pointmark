@@ -1,4 +1,3 @@
-import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.PointRoi;
 import ij.plugin.frame.RoiManager;
@@ -30,8 +29,7 @@ public abstract class PointListener extends MouseAdapter {
             pointRoi.setPointType(2);
             pointRoi.setSize(3);
             pointRoi.setName("set_1");
-        }
-        else {
+        } else {
             pointRoi.setStrokeColor(new Color(255, 255, 0));
             pointRoi.setPointType(2);
             pointRoi.setSize(3);

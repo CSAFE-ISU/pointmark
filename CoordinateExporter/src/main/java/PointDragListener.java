@@ -32,7 +32,7 @@ public class PointDragListener extends PointListener {
         selected = roiManager.getSelectedIndex();
 
         //so that you don't have to check both rois
-        PointRoi initialRoi = (PointRoi)roiManager.getRoi(selected);
+        PointRoi initialRoi = (PointRoi) roiManager.getRoi(selected);
 
         initialState = initialRoi.getContainedPoints();
 
@@ -48,7 +48,7 @@ public class PointDragListener extends PointListener {
         }
 
         //so that you don't have to check both rois
-        PointRoi currentRoi = (PointRoi)roiManager.getRoi(selected);
+        PointRoi currentRoi = (PointRoi) roiManager.getRoi(selected);
 
         Point[] newState = currentRoi.getContainedPoints();
 
@@ -62,7 +62,7 @@ public class PointDragListener extends PointListener {
         }
 
         if (movedPoint != null) {
-            
+
             PointRoi initialStateROI = new PointRoi();
             for (Point p : initialState) {
                 initialStateROI.addPoint(p.getX(), p.getY());
@@ -82,6 +82,6 @@ public class PointDragListener extends PointListener {
         if (!this.getClass().equals(sister.getClass())) {
             return;
         }
-        this.sister = (PointDragListener)sister;
+        this.sister = (PointDragListener) sister;
     }
 }

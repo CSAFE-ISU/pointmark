@@ -1,18 +1,13 @@
-import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.PointRoi;
-import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import org.json.XMLParserConfiguration;
-//import org.json.simple.JSONArray;
-//import org.json.simple.JSONObject;
-//import org.json.simple.parser.JSONParser;
-//import org.json.simple.parser.ParseException;
+
 import java.awt.*;
-import java.io.*;
+import java.io.FileReader;
+import java.io.IOException;
 
 /**
  * Reads the imported JSON file and applies it to the ImagePlus window in two
@@ -40,15 +35,15 @@ class JSONReader {
     }
 
     public RoiManager importCoordsFromJSON(ImagePlus img, ImagePlus img2, String filePath) throws IOException, NullPointerException {
-        JSONObject reader  = new JSONObject(new JSONTokener(new FileReader(filePath)));
+        JSONObject reader = new JSONObject(new JSONTokener(new FileReader(filePath)));
         RoiManager coords = RoiManager.getRoiManager(); //Opens RoI Manager if not already open
         coords.reset(); //Clears the previously open RoIs
 
-        JSONArray points = (JSONArray)reader.get("set_1");
+        JSONArray points = (JSONArray) reader.get("set_1");
         PointRoi roi = new PointRoi();
         coords.add(fillROI(img, points, roi, true), 0); //identifier 0
 
-        points = (JSONArray)reader.get("set_2");
+        points = (JSONArray) reader.get("set_2");
         PointRoi roi2 = new PointRoi();
         coords.add(fillROI(img2, points, roi2, false), 1); //identifier 1
 

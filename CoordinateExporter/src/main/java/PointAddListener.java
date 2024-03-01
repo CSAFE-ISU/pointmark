@@ -1,11 +1,9 @@
-import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.PointRoi;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.util.Arrays;
 
 /**
  * Class to reverse changes in position of points caused by the user. Essentially, does not allow
@@ -50,8 +48,7 @@ public class PointAddListener extends PointListener {
                 invalidNew.addPoint(points[i].getX(), points[i].getY());
             }
             invalidROI = invalidNew;
-        }
-        else if (invalidCount > points.length) {
+        } else if (invalidCount > points.length) {
             PointRoi invalidNew = new PointRoi();
             Point[] sisterPoints = sister.originalPoints;
             for (int i = 0; i < sisterPoints.length; i++) {
@@ -68,7 +65,7 @@ public class PointAddListener extends PointListener {
     }
 
     public void initInvalidROI() {
-        invalidROI = (PointRoi)roiManager.getRoi(invalidROINum == 0 ? 0 : 1);
+        invalidROI = (PointRoi) roiManager.getRoi(invalidROINum == 0 ? 0 : 1);
         invalidCount = invalidROI.getContainedPoints().length;
     }
 
@@ -76,7 +73,7 @@ public class PointAddListener extends PointListener {
         if (!this.getClass().equals(sister.getClass())) {
             return;
         }
-        this.sister = (PointAddListener)sister;
+        this.sister = (PointAddListener) sister;
     }
 
     public void updateSisterInfo(int selected) {

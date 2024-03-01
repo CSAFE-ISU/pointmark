@@ -1,12 +1,11 @@
-import ij.ImagePlus;
 import ij.gui.PointRoi;
 import ij.plugin.frame.RoiManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
-//import org.json.simple.JSONArray;
-//import org.json.simple.JSONObject;
+
 import java.awt.*;
-import java.io.*;
+import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * Exports the current iteration of the set_1 (index 0 in the ROI Manager) and set_2 (index 1)
@@ -32,8 +31,8 @@ public class JSONWriter {
             throw new RuntimeException("There are no RoIs for this image.");
         }
 
-        PointRoi set1_Points = (PointRoi)roiManager.getRoi(0);
-        PointRoi set2_Points = (PointRoi)roiManager.getRoi(1);
+        PointRoi set1_Points = (PointRoi) roiManager.getRoi(0);
+        PointRoi set2_Points = (PointRoi) roiManager.getRoi(1);
 
         for (Point p : set1_Points) {
             tmp = new JSONArray();
