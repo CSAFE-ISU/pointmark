@@ -2,3 +2,6 @@
 /.project
 /.settings/
 /target/
+# shell script to run ImageJ locally
+run-imagej.sh
+*.pdf
