@@ -1,6 +1,8 @@
 import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
+import ij.gui.PointRoi;
+import ij.gui.PolygonRoi;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -96,8 +98,6 @@ public class Image_Saver {
             public void actionPerformed(ActionEvent e) {
                 String item = Objects.requireNonNull(imgs.getSelectedItem()).toString();
                 ImagePlus tmp = imgmap.get(item);
-                System.out.println(tmp.getNSlices());
-                System.out.println(tmp.getNFrames());
             }
         });
         markupAvailable.addActionListener(new ActionListener() {
@@ -156,11 +156,19 @@ public class Image_Saver {
     public void run(String arg) {
         int p = JOptionPane.showConfirmDialog(null, this.panel,
                 "Save Image and Markup", JOptionPane.OK_CANCEL_OPTION);
-        if (p == JOptionPane.OK_OPTION && img_valid) {
-            ImagePlus tmp = imgmap.get(Objects.requireNonNull(imgs.getSelectedItem()).toString());
-            IJ.save(tmp, imgPath.getText());
-            if (markup_valid) {
-                System.out.println("should save markup somewhere...");
+        if (p == JOptionPane.CANCEL_OPTION) return;
+        if (!img_valid) return;
+
+        ImagePlus tmp = imgmap.get(Objects.requireNonNull(imgs.getSelectedItem()).toString());
+        IJ.save(tmp, imgPath.getText());
+        if (markup_valid) {
+            PolygonRoi pol = (PolygonRoi) tmp.getProperty("bounds");
+            PointRoi pts = (PointRoi) tmp.getProperty("points");
+            if (pol != null && pts != null) {
+                MarkupData m = MarkupData.fromROIPair(pol, pts);
+                m.toFile(markupPath.getText());
+            } else {
+                System.out.println("Unable to save markup!!!");
             }
         }
     }
