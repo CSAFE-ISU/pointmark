@@ -192,12 +192,69 @@ public class Align_Runner implements PlugIn {
         int p = JOptionPane.showConfirmDialog(null, this.panel,
                 "Save Image + Markup", JOptionPane.OK_CANCEL_OPTION);
         if (!uiLoaded || p == JOptionPane.CANCEL_OPTION) return;
+
+
         System.out.printf("option was %d\n", p);
 
         runWithProgress();
     }
 
     void runWithProgress() {
+        ImagePlus q_img = imgmap.get(Q_imgs.getSelectedItem());
+        ImagePlus k_img = imgmap.get(K_imgs.getSelectedItem());
+        Point[] q_pts = ((PointRoi) q_img.getProperty("points")).getContainedPoints();
+        Point[] k_pts = ((PointRoi) k_img.getProperty("points")).getContainedPoints();
+        double delta = Double.parseDouble(deltaT.getText());
+        double epsilon = Double.parseDouble(epsilonT.getText());
+        double min_ratio = Double.parseDouble(minRatioT.getText());
+        double max_ratio = Double.parseDouble(maxRatioT.getText());
+        int lower_bound = Integer.parseInt(lowerBoundT.getText());
+        boolean showOverlay = viewOverlay.isSelected();
+
+        String[] works = {"Starting...",
+                "Checking scales...",
+                "Aligning...",
+                "Calculating similarity scores...",
+                "Cleaning up..."};
+        int[] progressLevel = {5, 25, 50, 75, 99};
+        final int[] i = {0};
+
+        Thread work = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (i[0] >= 0 && i[0] < works.length) {
+                        switch (i[0]) {
+                            case 1: {
+                                Mapper3 x = new Mapper3();
+                                x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
+                                        delta, epsilon, min_ratio, max_ratio);
+                                break;
+                            }
+                            case 2: {
+                                System.out.println("max clique");
+                                break;
+                            }
+                            case 3: {
+                                System.out.println("scoring/viz");
+                                break;
+                            }
+                            case 4: {
+                                System.out.println("saving...");
+                                break;
+                            }
+                        }
+                        Thread.sleep(750);
+                        i[0] += 1;
+
+                    }
+                } catch (Exception e) {
+                    System.out.println("failed" + e.getMessage());
+                    i[0] = -1;
+                }
+            }
+        });
+
         JFrame frame = new JFrame();
         JPanel subpanel = new JPanel(new GridLayout(2, 1));
         JProgressBar bar = new JProgressBar();
@@ -207,46 +264,26 @@ public class Align_Runner implements PlugIn {
         frame.setContentPane(subpanel);
         frame.setSize(320, 240);
 
-        String[] works = {"starting...",
-                "checking scales...",
-                "aligning...",
-                "calculating similarity scores...",
-                "cleaning up..."};
-        int[] progressLevel = {5, 25, 50, 75, 99};
-        final int[] i = {0};
-        Thread t1 = new Thread(new Runnable() {
+        Thread ui = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    while (i[0] < works.length) {
+                    while (i[0] >= 0 && i[0] < works.length) {
                         currentWork.setText(works[i[0]]);
                         bar.setValue(progressLevel[i[0]]);
                         Thread.sleep(275);
                     }
                     frame.setVisible(false);
-                } catch (Exception ignored) {
-                }
-            }
-        });
+                    System.out.println("complete");
 
-        Thread t2 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (i[0] < works.length) {
-                        i[0] += 1;
-                        Thread.sleep(750);
-                    }
                 } catch (Exception ignored) {
                 }
             }
         });
 
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        // frame.pack(); //sizes the window
         frame.setVisible(true);
-        t1.start();
-        t2.start();
-        System.out.println("complete");
+        ui.start();
+        work.start();
     }
 }
