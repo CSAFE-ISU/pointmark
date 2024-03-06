@@ -34,7 +34,7 @@ public class Mapper3 {
         t[ii].construct(x, y, z, p[x], p[y], p[z]);
     }
 
-    public void construct_graph(java.awt.Point[] q_pts, int qlen,
+    public org.ahgamut.clqmtch.Graph construct_graph(java.awt.Point[] q_pts, int qlen,
                                 java.awt.Point[] k_pts, int klen,
                                  double delta, double epsilon,
                                  double min_ratio,
@@ -74,7 +74,7 @@ public class Mapper3 {
 
         AdjMat adjmat = new AdjMat(qlen, klen);
         // default initialized to zero
-        // Graph res = new Graph();
+        org.ahgamut.clqmtch.Graph res = new org.ahgamut.clqmtch.Graph();
 
         int ix, iy;
         boolean[] check = new boolean[8];
@@ -138,14 +138,14 @@ public class Mapper3 {
         System.out.printf("%d valid triangles out of %d in Q\n", valid_M, M);
         System.out.printf("%d valid triangles out of %d in K\n", valid_N, N);
 
-        // res.load_matrix(adjmat.matsize, adjmat.mat);
+        res.load_matrix(adjmat.matsize, adjmat.mat);
 
         /* reset ratios to default */
         MIN_RATIO = MIN_RATIO_DEFAULT;
         MAX_RATIO = MAX_RATIO_DEFAULT;
 
         /* send the answer back */
-        // return res;
+        return res;
     }
 
     private static class Triple {

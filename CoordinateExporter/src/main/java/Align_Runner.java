@@ -3,6 +3,7 @@ import ij.WindowManager;
 import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
 import ij.plugin.PlugIn;
+import org.ahgamut.clqmtch.StackDFS;
 
 import javax.swing.*;
 import java.awt.*;
@@ -222,20 +223,25 @@ public class Align_Runner implements PlugIn {
         Thread work = new Thread(new Runnable() {
             @Override
             public void run() {
+                Mapper3 x = new Mapper3();
+                org.ahgamut.clqmtch.Graph g = null;
+                org.ahgamut.clqmtch.StackDFS s = new StackDFS();
                 try {
                     while (i[0] >= 0 && i[0] < works.length) {
                         switch (i[0]) {
                             case 1: {
-                                Mapper3 x = new Mapper3();
-                                x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
+                                g = x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
                                         delta, epsilon, min_ratio, max_ratio);
                                 break;
                             }
                             case 2: {
+                                System.out.println(g.toString());
+                                s.process_graph(g); /* warning is glitch */
                                 System.out.println("max clique");
                                 break;
                             }
                             case 3: {
+                                System.out.println(g.get_max_clique());
                                 System.out.println("scoring/viz");
                                 break;
                             }
