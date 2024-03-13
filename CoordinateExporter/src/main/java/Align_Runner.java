@@ -3,14 +3,22 @@ import ij.WindowManager;
 import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
 import ij.plugin.PlugIn;
+import ij.process.ImageProcessor;
+import mpicbg.ij.InverseMapping;
+import mpicbg.ij.InverseTransformMapping;
+import mpicbg.ij.InvertibleTransformMapping;
+import mpicbg.models.*;
+import org.ahgamut.clqmtch.Graph;
 import org.ahgamut.clqmtch.StackDFS;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class Align_Runner implements PlugIn {
@@ -228,34 +236,59 @@ public class Align_Runner implements PlugIn {
                 org.ahgamut.clqmtch.Graph g = null;
                 org.ahgamut.clqmtch.StackDFS s = new StackDFS();
                 java.util.ArrayList<Integer> c;
-                java.util.ArrayList<Integer> qc = new ArrayList<>();
-                java.util.ArrayList<Integer> kc = new ArrayList<>();
+                double [][] qc = null;
+                double [][] kc = null;
+                ArrayList<PointMatch> corr = new ArrayList<>();
+                mpicbg.models.SimilarityModel2D tfunc = new SimilarityModel2D();
+                mpicbg.ij.InvertibleTransformMapping<SimilarityModel2D> tform = new InvertibleTransformMapping<>(tfunc);
+
+                double[][] params = new double[2][3];
                 try {
                     Thread.sleep(750);
+                    /* construct the graph */
                     i[0] += 1;
                     g = x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
                             delta, epsilon, min_ratio, max_ratio);
                     System.out.println(g.toString());
+
+                    /* find max clique (TODO: lower_bound) */
                     i[0] += 1;
                     s.process_graph(g); /* warning is glitch */
+
+                    /* find transform fit */
                     i[0] += 1;
-                    System.out.println("max clique");;
+                    System.out.println("max clique");
                     c = g.get_max_clique();
-                    for (int z : c) {
-                        qc.add(z / k_pts.length);
-                        kc.add(z % k_pts.length);
+                    qc = new double[c.size()][2];
+                    kc = new double[c.size()][2];
+                    for (int j = 0; j < c.size(); ++j) {
+                        int z = c.get(j);
+                        qc[j][0] = q_pts[z / k_pts.length].getX();
+                        qc[j][1] = q_pts[z / k_pts.length].getY();
+                        kc[j][0] = k_pts[z % k_pts.length].getX();
+                        kc[j][1] = k_pts[z % k_pts.length].getY();
+                        corr.add(new PointMatch(
+                                new mpicbg.models.Point(kc[j]),
+                                new mpicbg.models.Point(qc[j])
+                        ));
                     }
-                    System.out.println(c);
-                    System.out.println(qc);
-                    System.out.println(kc);
                     Thread.sleep(750);
                     i[0] += 1;
-                    System.out.println("scoring/viz");
+                    System.out.println("fitting tform...");
+                    tfunc.fit(corr);
+                    tfunc.toMatrix(params);
+                    System.out.println(Arrays.deepToString(params));
+                    System.out.println("post PLS");
+                    for (int j = 0; j < c.size(); j++) {
+                        System.out.println(Arrays.toString(tfunc.apply(kc[j])) + "->" + Arrays.toString(qc[j]));
+                    }
+                    /* transform images via fit */
+                    /* TODO: something here with tform */
                     Thread.sleep(750);
                     System.out.println("saving...");
                     i[0] += 1;
                 } catch (Exception e) {
-                    System.out.println("failed" + e.getMessage());
+                    System.out.println("failed: " + e.getMessage() + " " + e);
                     i[0] = -1;
                 }
             }
