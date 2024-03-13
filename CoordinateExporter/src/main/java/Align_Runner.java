@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Align_Runner implements PlugIn {
@@ -226,34 +227,33 @@ public class Align_Runner implements PlugIn {
                 Mapper3 x = new Mapper3();
                 org.ahgamut.clqmtch.Graph g = null;
                 org.ahgamut.clqmtch.StackDFS s = new StackDFS();
+                java.util.ArrayList<Integer> c;
+                java.util.ArrayList<Integer> qc = new ArrayList<>();
+                java.util.ArrayList<Integer> kc = new ArrayList<>();
                 try {
-                    while (i[0] >= 0 && i[0] < works.length) {
-                        switch (i[0]) {
-                            case 1: {
-                                g = x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
-                                        delta, epsilon, min_ratio, max_ratio);
-                                break;
-                            }
-                            case 2: {
-                                System.out.println(g.toString());
-                                s.process_graph(g); /* warning is glitch */
-                                System.out.println("max clique");
-                                break;
-                            }
-                            case 3: {
-                                System.out.println(g.get_max_clique());
-                                System.out.println("scoring/viz");
-                                break;
-                            }
-                            case 4: {
-                                System.out.println("saving...");
-                                break;
-                            }
-                        }
-                        Thread.sleep(750);
-                        i[0] += 1;
-
+                    Thread.sleep(750);
+                    i[0] += 1;
+                    g = x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
+                            delta, epsilon, min_ratio, max_ratio);
+                    System.out.println(g.toString());
+                    i[0] += 1;
+                    s.process_graph(g); /* warning is glitch */
+                    i[0] += 1;
+                    System.out.println("max clique");;
+                    c = g.get_max_clique();
+                    for (int z : c) {
+                        qc.add(z / k_pts.length);
+                        kc.add(z % k_pts.length);
                     }
+                    System.out.println(c);
+                    System.out.println(qc);
+                    System.out.println(kc);
+                    Thread.sleep(750);
+                    i[0] += 1;
+                    System.out.println("scoring/viz");
+                    Thread.sleep(750);
+                    System.out.println("saving...");
+                    i[0] += 1;
                 } catch (Exception e) {
                     System.out.println("failed" + e.getMessage());
                     i[0] = -1;
