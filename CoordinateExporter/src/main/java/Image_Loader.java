@@ -1,11 +1,13 @@
 import ij.IJ;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.Prefs;
 import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.gui.Toolbar;
 import ij.plugin.PlugIn;
+import ij.process.ImageProcessor;
 import org.json.JSONException;
 
 import javax.swing.*;
@@ -135,8 +137,8 @@ public class Image_Loader implements PlugIn {
                 "Load Image and Markup", JOptionPane.OK_CANCEL_OPTION);
         if (p == JOptionPane.CANCEL_OPTION) return;
         if (!img_valid) return;
-        this.img = IJ.openImage(imgPath.getText());
-        this.img.show();
+        ImagePlus tmp = IJ.openImage(imgPath.getText());
+        tmp.show();
 
         boolean mark_bounds;
         PolygonRoi pol = null;
@@ -149,7 +151,7 @@ public class Image_Loader implements PlugIn {
                     pol = m.getBoundsAsRoi();
                     mark_bounds = true;
                 } else {
-                    this.showBoundsHelper();
+                    this.showBoundsHelper(tmp);
                     mark_bounds = false;
                 }
                 if (m.npoints != 0) {
@@ -172,24 +174,34 @@ public class Image_Loader implements PlugIn {
         }
 
         if (!mark_bounds) {
-            pol = this.showBoundsHelper();
+            pol = this.showBoundsHelper(tmp);
         }
         if (pol == null || pts == null) {
             return;
         }
-        img.setRoi(pol);
-        img.setProperty("bounds", pol);
-        img.getProcessor().fillOutside(pol);
+        tmp.setRoi(pol);
+        ImageStack overlay = new ImageStack();
+        ImageProcessor marked = tmp.getProcessor().duplicate();
+        ImageProcessor mask = tmp.createRoiMask();
+        marked.fillOutside(pol);
+        overlay.addSlice(marked);
+        overlay.addSlice(mask);
+        overlay.addSlice(tmp.getProcessor());
+
+        this.img = new ImagePlus(tmp.getShortTitle(), overlay);
+        tmp.close();
 
         pts.setSize(3);
         pts.setFillColor(Color.RED);
         pts.setStrokeColor(Color.RED);
         img.setProperty("points", pts);
+        img.setProperty("bounds", pol);
         img.setRoi(pts);
         ij.IJ.setTool("Multi-Point");
+        img.show();
     }
 
-    PolygonRoi showBoundsHelper() {
+    PolygonRoi showBoundsHelper(ImagePlus tmp) {
         final Object obj = new Object();
         ij.IJ.setTool(Toolbar.POLYGON);
         Runnable r = new Runnable() {
@@ -226,7 +238,7 @@ public class Image_Loader implements PlugIn {
             e.printStackTrace();
         }
 
-        PolygonRoi pol = (PolygonRoi) img.getRoi();
+        PolygonRoi pol = (PolygonRoi) tmp.getRoi();
         return pol;
     }
 }
