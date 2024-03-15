@@ -232,37 +232,20 @@ public class Align_Runner implements PlugIn {
         Thread work = new Thread(new Runnable() {
             @Override
             public void run() {
-                Mapper3 x = new Mapper3();
-                org.ahgamut.clqmtch.Graph g = null;
-                org.ahgamut.clqmtch.StackDFS s = new StackDFS();
                 java.util.ArrayList<Integer> c;
-                double[][] qc = null;
-                double[][] kc = null;
                 ArrayList<PointMatch> corr = new ArrayList<>();
                 mpicbg.models.SimilarityModel2D tfunc = new SimilarityModel2D();
-                mpicbg.ij.InvertibleTransformMapping<SimilarityModel2D> tform = new InvertibleTransformMapping<>(tfunc);
+                double[][] qc;
+                double[][] kc;
 
-                ij.ImageStack res = new ImageStack();
-                ij.ImageStack q_stack = q_img.getImageStack();
-                ij.ImageStack k_stack = k_img.getImageStack();
-
-                double[][] params = new double[2][3];
                 try {
-                    Thread.sleep(750);
-                    /* construct the graph */
-                    i[0] += 1;
-                    g = x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
-                            delta, epsilon, min_ratio, max_ratio);
-                    System.out.println(g.toString());
-
                     /* find max clique (TODO: lower_bound) */
                     i[0] += 1;
-                    s.process_graph(g); /* warning is glitch */
+                    System.out.println("max clique");
+                    c = this.get_clique();
 
                     /* find transform fit */
                     i[0] += 1;
-                    System.out.println("max clique");
-                    c = g.get_max_clique();
                     qc = new double[c.size()][2];
                     kc = new double[c.size()][2];
                     for (int j = 0; j < c.size(); ++j) {
@@ -276,44 +259,14 @@ public class Align_Runner implements PlugIn {
                                 new mpicbg.models.Point(qc[j])
                         ));
                     }
-                    Thread.sleep(750);
+                    Thread.sleep(250);
                     i[0] += 1;
+
                     System.out.println("fitting tform...");
                     tfunc.fit(corr);
-                    tfunc.toMatrix(params);
-                    System.out.println(Arrays.deepToString(params));
-                    System.out.println("post PLS");
+                    i[0] += 1;
 
-                    /* overlay with transform fit */
-                    PointRoi qp1 = new PointRoi();
-                    PointRoi kp1 = new PointRoi();
-
-                    double[] z = new double[2];
-                    for (int j = 0; j < c.size(); j++) {
-                        z[0] = kc[j][0];
-                        z[1] = kc[j][1];
-                        z = tfunc.apply(z);
-                        System.out.println(Arrays.toString(z) + "->" + Arrays.toString(qc[j]));
-                        qp1.addPoint(qc[j][0], qc[j][1]);
-                        kp1.addPoint(z[0], z[1]);
-                    }
-                    /* transform images via fit */
-                    ImagePlus tq = new ImagePlus();
-                    tq.setProcessor(q_stack.getProcessor(1));
-                    ImageProcessor q1 = colorify(tq).getProcessor();
-
-                    tq.setProcessor(q_stack.getProcessor(2));
-                    ImageProcessor q2 = burnPoints(tq, qp1, kp1).getProcessor().duplicate();
-
-                    ImageProcessor k1 = k_stack.getProcessor(1).createProcessor(q1.getWidth(), q1.getHeight());
-                    tform.mapInterpolated(k_stack.getProcessor(1), k1);
-                    tq.setProcessor(k1);
-                    k1 = colorify(tq).getProcessor();
-
-                    res.addSlice(q1);
-                    res.addSlice(k1);
-                    res.addSlice(q2);
-                    ImagePlus rimg = new ImagePlus("result", res);
+                    ImagePlus rimg = createOverlay(tfunc, qc, kc);
                     rimg.show();
                     System.out.println("saving...");
                     i[0] += 1;
@@ -322,6 +275,53 @@ public class Align_Runner implements PlugIn {
                     e.printStackTrace();
                     i[0] = -1;
                 }
+            }
+
+            ArrayList<Integer> get_clique() {
+                Mapper3 x = new Mapper3();
+                org.ahgamut.clqmtch.Graph g = x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
+                        delta, epsilon, min_ratio, max_ratio);
+                org.ahgamut.clqmtch.StackDFS s = new StackDFS();
+                s.process_graph(g); /* warning is glitch */
+                System.out.println(g.toString());
+                return g.get_max_clique();
+            }
+
+            ImagePlus createOverlay(mpicbg.models.SimilarityModel2D tfunc, double[][] qc, double[][] kc) {
+                ij.ImageStack res = new ImageStack();
+                ij.ImageStack q_stack = q_img.getImageStack();
+                ij.ImageStack k_stack = k_img.getImageStack();
+                mpicbg.ij.InvertibleTransformMapping<SimilarityModel2D> tform = new InvertibleTransformMapping<>(tfunc);
+
+                PointRoi qp1 = new PointRoi();
+                PointRoi kp1 = new PointRoi();
+
+                double[] z = new double[2];
+                for (int j = 0; j < qc.length; j++) {
+                    z[0] = kc[j][0];
+                    z[1] = kc[j][1];
+                    z = tfunc.apply(z);
+                    System.out.println(Arrays.toString(z) + "->" + Arrays.toString(qc[j]));
+                    qp1.addPoint(qc[j][0], qc[j][1]);
+                    kp1.addPoint(z[0], z[1]);
+                }
+                /* transform images via fit */
+                ImagePlus tq = new ImagePlus();
+                tq.setProcessor(q_stack.getProcessor(1));
+                ImageProcessor q1 = colorify(tq).getProcessor();
+
+                tq.setProcessor(q_stack.getProcessor(2));
+                ImageProcessor q2 = burnPoints(tq, qp1, kp1).getProcessor().duplicate();
+
+                ImageProcessor k1 = k_stack.getProcessor(1).createProcessor(q1.getWidth(), q1.getHeight());
+                tform.mapInterpolated(k_stack.getProcessor(1), k1);
+                tq.setProcessor(k1);
+                k1 = colorify(tq).getProcessor();
+
+                res.addSlice(q1);
+                res.addSlice(k1);
+                res.addSlice(q2);
+                return new ImagePlus("Overlay", res);
             }
 
             ImagePlus colorify(ImagePlus imp) {
@@ -339,12 +339,12 @@ public class Align_Runner implements PlugIn {
                 g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                         RenderingHints.VALUE_ANTIALIAS_ON);
                 g.drawImage(imp.getImage(), 0, 0, null);
-                g.setStroke(new BasicStroke(6.5F));
+                g.setStroke(new BasicStroke(16.5F));
                 g.setPaint(Color.RED);
                 for (Point p : q_pts) {
                     g.drawOval(p.x, p.y, 75, 75);
                 }
-                g.setStroke(new BasicStroke(8.5F));
+                g.setStroke(new BasicStroke(18.5F));
                 g.setPaint(Color.BLUE);
                 for (Point p : k_pts) {
                     g.drawRect(p.x, p.y, 53, 53);
@@ -373,7 +373,6 @@ public class Align_Runner implements PlugIn {
                     }
                     frame.setVisible(false);
                     System.out.println("complete");
-
                 } catch (Exception ignored) {
                 }
             }
