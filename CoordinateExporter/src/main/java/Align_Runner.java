@@ -1,21 +1,21 @@
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
 import ij.plugin.PlugIn;
+import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
-import mpicbg.ij.InverseMapping;
-import mpicbg.ij.InverseTransformMapping;
 import mpicbg.ij.InvertibleTransformMapping;
-import mpicbg.models.*;
-import org.ahgamut.clqmtch.Graph;
+import mpicbg.models.PointMatch;
+import mpicbg.models.SimilarityModel2D;
 import org.ahgamut.clqmtch.StackDFS;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -236,11 +236,15 @@ public class Align_Runner implements PlugIn {
                 org.ahgamut.clqmtch.Graph g = null;
                 org.ahgamut.clqmtch.StackDFS s = new StackDFS();
                 java.util.ArrayList<Integer> c;
-                double [][] qc = null;
-                double [][] kc = null;
+                double[][] qc = null;
+                double[][] kc = null;
                 ArrayList<PointMatch> corr = new ArrayList<>();
                 mpicbg.models.SimilarityModel2D tfunc = new SimilarityModel2D();
                 mpicbg.ij.InvertibleTransformMapping<SimilarityModel2D> tform = new InvertibleTransformMapping<>(tfunc);
+
+                ij.ImageStack res = new ImageStack();
+                ij.ImageStack q_stack = q_img.getImageStack();
+                ij.ImageStack k_stack = k_img.getImageStack();
 
                 double[][] params = new double[2][3];
                 try {
@@ -279,18 +283,73 @@ public class Align_Runner implements PlugIn {
                     tfunc.toMatrix(params);
                     System.out.println(Arrays.deepToString(params));
                     System.out.println("post PLS");
+
+                    /* overlay with transform fit */
+                    PointRoi qp1 = new PointRoi();
+                    PointRoi kp1 = new PointRoi();
+
+                    double[] z = new double[2];
                     for (int j = 0; j < c.size(); j++) {
-                        System.out.println(Arrays.toString(tfunc.apply(kc[j])) + "->" + Arrays.toString(qc[j]));
+                        z[0] = kc[j][0];
+                        z[1] = kc[j][1];
+                        z = tfunc.apply(z);
+                        System.out.println(Arrays.toString(z) + "->" + Arrays.toString(qc[j]));
+                        qp1.addPoint(qc[j][0], qc[j][1]);
+                        kp1.addPoint(z[0], z[1]);
                     }
                     /* transform images via fit */
-                    /* TODO: something here with tform */
-                    Thread.sleep(750);
+                    ImagePlus tq = new ImagePlus();
+                    tq.setProcessor(q_stack.getProcessor(1));
+                    ImageProcessor q1 = colorify(tq).getProcessor();
+
+                    tq.setProcessor(q_stack.getProcessor(2));
+                    ImageProcessor q2 = burnPoints(tq, qp1, kp1).getProcessor().duplicate();
+
+                    ImageProcessor k1 = k_stack.getProcessor(1).createProcessor(q1.getWidth(), q1.getHeight());
+                    tform.mapInterpolated(k_stack.getProcessor(1), k1);
+                    tq.setProcessor(k1);
+                    k1 = colorify(tq).getProcessor();
+
+                    res.addSlice(q1);
+                    res.addSlice(k1);
+                    res.addSlice(q2);
+                    ImagePlus rimg = new ImagePlus("result", res);
+                    rimg.show();
                     System.out.println("saving...");
                     i[0] += 1;
                 } catch (Exception e) {
                     System.out.println("failed: " + e.getMessage() + " " + e);
+                    e.printStackTrace();
                     i[0] = -1;
                 }
+            }
+
+            ImagePlus colorify(ImagePlus imp) {
+                BufferedImage bi = new BufferedImage(imp.getWidth(), imp.getHeight(), BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g = (Graphics2D) bi.getGraphics();
+                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g.drawImage(imp.getImage(), 0, 0, null);
+                return new ImagePlus("", new ColorProcessor(bi));
+            }
+
+            ImagePlus burnPoints(ImagePlus imp, PointRoi q_pts, PointRoi k_pts) {
+                BufferedImage bi = new BufferedImage(imp.getWidth(), imp.getHeight(), BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g = (Graphics2D) bi.getGraphics();
+                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g.drawImage(imp.getImage(), 0, 0, null);
+                g.setStroke(new BasicStroke(6.5F));
+                g.setPaint(Color.RED);
+                for (Point p : q_pts) {
+                    g.drawOval(p.x, p.y, 75, 75);
+                }
+                g.setStroke(new BasicStroke(8.5F));
+                g.setPaint(Color.BLUE);
+                for (Point p : k_pts) {
+                    g.drawRect(p.x, p.y, 53, 53);
+                }
+                return new ImagePlus("", new ColorProcessor(bi));
             }
         });
 
