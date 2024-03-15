@@ -108,6 +108,8 @@ public class Align_Runner implements PlugIn {
         ImagePlus tmp;
         for (int id : idList) {
             tmp = WindowManager.getImage(id);
+            if (tmp.getProperty("points") == null) continue;
+            if (tmp.getProperty("bounds") == null) continue;
             imgmap.put(tmp.getShortTitle(), tmp);
             Q_imgs.addItem(tmp.getShortTitle());
             K_imgs.addItem(tmp.getShortTitle());
@@ -154,8 +156,8 @@ public class Align_Runner implements PlugIn {
     void loadReactions() {
         minRatioT.setText("0.8");
         maxRatioT.setText("1.2");
-        deltaT.setText("0.5");
-        epsilonT.setText("0.01");
+        deltaT.setText("0.1");
+        epsilonT.setText("0.03");
         lowerBoundT.setText("10");
         viewOverlay.setSelected(true);
         viewScores.setSelected(false);
@@ -170,7 +172,7 @@ public class Align_Runner implements PlugIn {
                 PointRoi r;
                 z = imgmap.get(Q_imgs.getSelectedItem());
                 r = (PointRoi) z.getProperty("points");
-                Qimg_points.setText(r.size() + "points");
+                Qimg_points.setText(r.size() + " points");
             }
         });
 
@@ -202,10 +204,6 @@ public class Align_Runner implements PlugIn {
         int p = JOptionPane.showConfirmDialog(null, this.panel,
                 "Save Image + Markup", JOptionPane.OK_CANCEL_OPTION);
         if (!uiLoaded || p == JOptionPane.CANCEL_OPTION) return;
-
-
-        System.out.printf("option was %d\n", p);
-
         runWithProgress();
     }
 
