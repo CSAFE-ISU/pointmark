@@ -3,6 +3,8 @@ import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
+import ij.io.FileInfo;
+import ij.io.TiffEncoder;
 import ij.plugin.PlugIn;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
@@ -12,14 +14,23 @@ import mpicbg.models.SimilarityModel2D;
 import org.ahgamut.clqmtch.StackDFS;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class Align_Runner implements PlugIn {
 
@@ -38,10 +49,16 @@ public class Align_Runner implements PlugIn {
     private final JCheckBox viewScores;
     private final JLabel Qimg_points;
     private final JLabel Kimg_points;
+
+    private final JButton overlaySaveButton;
+    private final JTextArea overlayPath;
+
+    private String targ_zip;
     private boolean uiLoaded;
 
+
     public Align_Runner() {
-        this.panel = new JPanel(new GridLayout(7, 4));
+        this.panel = new JPanel(new GridLayout(8, 4));
         this.dummy = new JTextArea();
         this.imgmap = new HashMap<>();
         this.Q_imgs = new JComboBox<>();
@@ -57,7 +74,10 @@ public class Align_Runner implements PlugIn {
         this.lowerBoundT = new JFormattedTextField(NumberFormat.getInstance());
         this.viewOverlay = new JCheckBox();
         this.viewScores = new JCheckBox();
+        this.overlayPath = new JTextArea();
+        this.overlaySaveButton = new JButton("Select ZIP Filename");
         this.uiLoaded = false;
+        this.targ_zip = "";
         loadUI();
     }
 
@@ -144,11 +164,16 @@ public class Align_Runner implements PlugIn {
         panel.add(new JLabel("points"));
         panel.add(new JLabel("in common"));
 
-        panel.add(new JLabel("Image Overlay?"));
+        panel.add(overlaySaveButton);
+        panel.add(overlayPath);
+        panel.add(new JLabel("View Overlay?"));
         panel.add(viewOverlay);
-        panel.add(new JLabel("Similarity Score?"));
+
+        panel.add(new JLabel("View Similarity Score?"));
         panel.add(viewScores);
 
+        overlayPath.setEnabled(false);
+        overlayPath.setText(targ_zip);
         loadReactions();
         uiLoaded = true;
     }
@@ -190,6 +215,22 @@ public class Align_Runner implements PlugIn {
             }
         });
 
+        overlaySaveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser chooser = new JFileChooser();
+                chooser.setFileFilter(new FileNameExtensionFilter("ZIP file to save data in", "zip"));
+                int returnValue = chooser.showSaveDialog(null);
+                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                    File file = chooser.getSelectedFile();
+                    overlayPath.setText(file.getAbsolutePath());
+                } else {
+                    JOptionPane.showMessageDialog(null, "Did not select a File!");
+                    overlayPath.setText("");
+                }
+            }
+        });
+
         this.getNumPoints(imgmap.get(K_imgs.getSelectedItem()), Kimg_points);
         this.getNumPoints(imgmap.get(Q_imgs.getSelectedItem()), Qimg_points);
     }
@@ -204,6 +245,12 @@ public class Align_Runner implements PlugIn {
         int p = JOptionPane.showConfirmDialog(null, this.panel,
                 "Save Image + Markup", JOptionPane.OK_CANCEL_OPTION);
         if (!uiLoaded || p == JOptionPane.CANCEL_OPTION) return;
+        if (overlayPath.getText() == null) return;
+        if (overlayPath.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No ZIP savefile provided!");
+            return;
+        }
+        targ_zip = overlayPath.getText();
         runWithProgress();
     }
 
@@ -218,6 +265,9 @@ public class Align_Runner implements PlugIn {
         double max_ratio = Double.parseDouble(maxRatioT.getText());
         int lower_bound = Integer.parseInt(lowerBoundT.getText());
         boolean showOverlay = viewOverlay.isSelected();
+        if (!targ_zip.endsWith(".zip")) {
+            targ_zip += ".zip";
+        }
 
         String[] works = {"Starting...",
                 "Checking scales...",
@@ -235,8 +285,20 @@ public class Align_Runner implements PlugIn {
                 mpicbg.models.SimilarityModel2D tfunc = new SimilarityModel2D();
                 double[][] qc;
                 double[][] kc;
+                double[][] q0 = new double[q_pts.length][2];
+                double[][] k0 = new double[k_pts.length][2];
 
                 try {
+                    for (int j = 0; j < q_pts.length; ++j) {
+                        q0[j][0] = q_pts[j].getX();
+                        q0[j][1] = q_pts[j].getY();
+                    }
+
+                    for (int j = 0; j < k_pts.length; ++j) {
+                        k0[j][0] = k_pts[j].getX();
+                        k0[j][1] = k_pts[j].getY();
+                    }
+
                     /* find max clique (TODO: lower_bound) */
                     i[0] += 1;
                     System.out.println("max clique");
@@ -262,11 +324,13 @@ public class Align_Runner implements PlugIn {
 
                     System.out.println("fitting tform...");
                     tfunc.fit(corr);
-                    i[0] += 1;
 
-                    ImagePlus rimg = createOverlay(tfunc, qc, kc);
-                    rimg.show();
+                    ImagePlus rimg = createOverlay(tfunc, q0, k0);
                     System.out.println("saving...");
+                    if (!saveOverlay(rimg.getImageStack())) {
+                        throw new IOException("unable to save zip");
+                    }
+                    rimg.show();
                     i[0] += 1;
                 } catch (Exception e) {
                     System.out.println("failed: " + e.getMessage() + " " + e);
@@ -279,6 +343,7 @@ public class Align_Runner implements PlugIn {
                 Mapper3 x = new Mapper3();
                 org.ahgamut.clqmtch.Graph g = x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
                         delta, epsilon, min_ratio, max_ratio);
+                i[0] += 1;
                 org.ahgamut.clqmtch.StackDFS s = new StackDFS();
                 s.process_graph(g); /* warning is glitch */
                 System.out.println(g.toString());
@@ -294,15 +359,15 @@ public class Align_Runner implements PlugIn {
                 PointRoi qp1 = new PointRoi();
                 PointRoi kp1 = new PointRoi();
 
-                double[] z = new double[2];
-                for (int j = 0; j < qc.length; j++) {
-                    z[0] = kc[j][0];
-                    z[1] = kc[j][1];
-                    z = tfunc.apply(z);
-                    System.out.println(Arrays.toString(z) + "->" + Arrays.toString(qc[j]));
-                    qp1.addPoint(qc[j][0], qc[j][1]);
+                double[] z;
+                for (double[] pt : qc) {
+                    qp1.addPoint(pt[0], pt[1]);
+                }
+                for (double[] pt : kc) {
+                    z = tfunc.apply(pt);
                     kp1.addPoint(z[0], z[1]);
                 }
+
                 /* transform images via fit */
                 ImagePlus tq = new ImagePlus();
                 tq.setProcessor(q_stack.getProcessor(1));
@@ -320,6 +385,40 @@ public class Align_Runner implements PlugIn {
                 res.addSlice(k1);
                 res.addSlice(q2);
                 return new ImagePlus("Overlay", res);
+            }
+
+            boolean saveOverlay(ImageStack ov_stack) {
+                System.out.println("Saving to " + targ_zip);
+                DataOutputStream out;
+                FileInfo info;
+                ImagePlus img;
+                TiffEncoder te;
+                try {
+                    ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(Paths.get(targ_zip)));
+                    out = new DataOutputStream(new BufferedOutputStream(zos, 4096));
+                    img = new ImagePlus("", ov_stack.getProcessor(1));
+                    info = img.getFileInfo();
+                    zos.putNextEntry(new ZipEntry("image_1.tiff"));
+                    te = new TiffEncoder(info);
+                    te.write(out);
+
+                    img = new ImagePlus("", ov_stack.getProcessor(2));
+                    info = img.getFileInfo();
+                    zos.putNextEntry(new ZipEntry("image_2.tiff"));
+                    te = new TiffEncoder(info);
+                    te.write(out);
+
+                    img = new ImagePlus("", ov_stack.getProcessor(3));
+                    info = img.getFileInfo();
+                    zos.putNextEntry(new ZipEntry("aligned_points.tiff"));
+                    te = new TiffEncoder(info);
+                    te.write(out);
+
+                    out.close();
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
             }
 
             ImagePlus colorify(ImagePlus imp) {
