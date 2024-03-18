@@ -8,14 +8,14 @@ import ij.io.TiffEncoder;
 import ij.plugin.PlugIn;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
-import mpicbg.ij.InvertibleTransformMapping;
-import mpicbg.models.PointMatch;
-import mpicbg.models.SimilarityModel2D;
+import mpicbg.ij.TransformMapping;
+import mpicbg.models.*;
 import org.ahgamut.clqmtch.StackDFS;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -27,8 +27,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -280,52 +281,24 @@ public class Align_Runner implements PlugIn {
         Thread work = new Thread(new Runnable() {
             @Override
             public void run() {
-                java.util.ArrayList<Integer> c;
-                ArrayList<PointMatch> corr = new ArrayList<>();
-                mpicbg.models.SimilarityModel2D tfunc = new SimilarityModel2D();
-                double[][] qc;
-                double[][] kc;
-                double[][] q0 = new double[q_pts.length][2];
-                double[][] k0 = new double[k_pts.length][2];
+                java.util.ArrayList<Integer> clq;
+                AlignImagePairFromPoints<AffineModel2D> aip = new AlignImagePairFromPoints<>(AffineModel2D::new);
 
                 try {
-                    for (int j = 0; j < q_pts.length; ++j) {
-                        q0[j][0] = q_pts[j].getX();
-                        q0[j][1] = q_pts[j].getY();
-                    }
-
-                    for (int j = 0; j < k_pts.length; ++j) {
-                        k0[j][0] = k_pts[j].getX();
-                        k0[j][1] = k_pts[j].getY();
-                    }
-
-                    /* find max clique (TODO: lower_bound) */
                     status[0] += 1;
+                    /* find max clique (TODO: lower_bound) */
                     System.out.println("max clique");
-                    c = this.get_clique();
+                    clq = this.get_clique();
+                    status[0] += 1;
 
                     /* find transform fit */
-                    status[0] += 1;
-                    qc = new double[c.size()][2];
-                    kc = new double[c.size()][2];
-                    for (int j = 0; j < c.size(); ++j) {
-                        int z = c.get(j);
-                        qc[j][0] = q_pts[z / k_pts.length].getX();
-                        qc[j][1] = q_pts[z / k_pts.length].getY();
-                        kc[j][0] = k_pts[z % k_pts.length].getX();
-                        kc[j][1] = k_pts[z % k_pts.length].getY();
-                        corr.add(new PointMatch(
-                                new mpicbg.models.Point(kc[j]),
-                                new mpicbg.models.Point(qc[j])
-                        ));
-                    }
+                    aip.load(q_pts, k_pts, clq);
                     Thread.sleep(250);
+                    System.out.println("fitting tform...");
+                    aip.estimate();
                     status[0] += 1;
 
-                    System.out.println("fitting tform...");
-                    tfunc.fit(corr);
-
-                    ImagePlus rimg = createOverlay(tfunc, q0, k0);
+                    ImagePlus rimg = createOverlay(aip);
                     System.out.println("saving...");
                     if (!saveOverlay(rimg.getImageStack())) {
                         throw new IOException("unable to save zip");
@@ -350,31 +323,18 @@ public class Align_Runner implements PlugIn {
                 return g.get_max_clique();
             }
 
-            ImagePlus createOverlay(mpicbg.models.SimilarityModel2D tfunc, double[][] qc, double[][] kc) {
+            ImagePlus createOverlay(AlignImagePairFromPoints<?> aip) {
                 ij.ImageStack res = new ImageStack();
                 ij.ImageStack q_stack = q_img.getImageStack();
                 ij.ImageStack k_stack = k_img.getImageStack();
-                mpicbg.ij.InvertibleTransformMapping<SimilarityModel2D> tform = new InvertibleTransformMapping<>(tfunc);
-
-                PointRoi qp1 = new PointRoi();
-                PointRoi kp1 = new PointRoi();
-
-                double[] z;
-                for (double[] pt : qc) {
-                    qp1.addPoint(pt[0], pt[1]);
-                }
-                for (double[] pt : kc) {
-                    z = tfunc.apply(pt);
-                    kp1.addPoint(z[0], z[1]);
-                }
+                PointRoi qp1 = ((PointRoi) q_img.getProperty("points"));
+                PointRoi kp1 = aip.getMappedK_ptsAsRoi();
 
                 /* transform images via fit */
                 ImageProcessor q1 = colorify(q_stack.getProcessor(1)).getProcessor();
-
                 ImageProcessor q2 = burnPoints(q_stack.getProcessor(2), qp1, kp1).getProcessor();
-
                 ImageProcessor k1 = k_stack.getProcessor(1).createProcessor(q1.getWidth(), q1.getHeight());
-                tform.mapInterpolated(k_stack.getProcessor(1), k1);
+                aip.mapImage(k_stack.getProcessor(1), false, k1);
                 k1 = colorify(k1).getProcessor();
 
                 res.addSlice(q1);
@@ -475,5 +435,137 @@ public class Align_Runner implements PlugIn {
         frame.setVisible(true);
         ui.start();
         work.start();
+    }
+}
+
+class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
+    private final T tform_q2k;
+    private final T tform_k2q;
+    private double[][] q_pts;
+    private double[][] qc;
+    private double[][] k_pts;
+    private double[][] kc;
+    private int[] clique;
+
+    public AlignImagePairFromPoints(Supplier<? extends T> ctor) {
+        tform_q2k = Objects.requireNonNull(ctor).get();
+        tform_k2q = Objects.requireNonNull(ctor).get();
+    }
+
+    public void load(Point[] q_pt0, Point[] k_pt0, ArrayList<Integer> c) {
+        q_pts = new double[q_pt0.length][2];
+        k_pts = new double[k_pt0.length][2];
+        qc = new double[c.size()][2];
+        kc = new double[c.size()][2];
+        clique = new int[c.size()];
+
+        int j, qlen, klen;
+        qlen = q_pt0.length;
+        klen = k_pt0.length;
+        for (j = 0; j < qlen; ++j) {
+            q_pts[j][0] = q_pt0[j].getX();
+            q_pts[j][1] = q_pt0[j].getY();
+        }
+
+        for (j = 0; j < klen; ++j) {
+            k_pts[j][0] = k_pt0[j].getX();
+            k_pts[j][1] = k_pt0[j].getY();
+        }
+
+        for (j = 0; j < clique.length; ++j) {
+            clique[j] = c.get(j);
+        }
+    }
+
+    public void estimate() throws NotEnoughDataPointsException, IllDefinedDataPointsException {
+        int j;
+        int csize = clique.length;
+        ArrayList<PointMatch> corr_k2q = new ArrayList<>();
+        ArrayList<PointMatch> corr_q2k = new ArrayList<>();
+        for (j = 0; j < csize; ++j) {
+            int z = clique[j];
+            qc[j][0] = q_pts[z / k_pts.length][0];
+            qc[j][1] = q_pts[z / k_pts.length][1];
+            kc[j][0] = k_pts[z % k_pts.length][0];
+            kc[j][1] = k_pts[z % k_pts.length][1];
+            corr_k2q.add(new PointMatch(
+                    new mpicbg.models.Point(kc[j]),
+                    new mpicbg.models.Point(qc[j])
+            ));
+            corr_q2k.add(new PointMatch(
+                    new mpicbg.models.Point(qc[j]),
+                    new mpicbg.models.Point(kc[j])
+            ));
+        }
+        tform_q2k.fit(corr_q2k);
+        tform_k2q.fit(corr_k2q);
+    }
+
+    void mapImage(ImageProcessor img, boolean fromQToK, ImageProcessor result) {
+        mpicbg.ij.TransformMapping<T> mapping;
+        /* we are doing an inverse interpolation, similar to scipy.warp */
+        if (fromQToK) {
+            mapping = new TransformMapping<>(this.tform_k2q);
+        } else {
+            mapping = new TransformMapping<>(this.tform_q2k);
+        }
+        mapping.mapInverseInterpolated(img, result);
+    }
+
+    double[][] mapPoints(double[][] pts, boolean fromQToK) {
+        double[][] res = new double[pts.length][2];
+        double[] z;
+        T tform;
+        if (fromQToK) {
+            tform = tform_q2k;
+        } else {
+            tform = tform_k2q;
+        }
+        for (int j = 0; j < pts.length; ++j) {
+            z = tform.apply(pts[j]);
+            res[j][0] = z[0];
+            res[j][1] = z[1];
+        }
+        return res;
+    }
+
+    PointRoi mapPointsAsRoi(double[][] pts, boolean fromQToK) {
+        PointRoi res = new PointRoi();
+        double[] z;
+        T tform;
+        if (fromQToK) {
+            tform = tform_q2k;
+        } else {
+            tform = tform_k2q;
+        }
+        for (int j = 0; j < pts.length; ++j) {
+            z = tform.apply(pts[j]);
+            res.addPoint(z[0], z[1]);
+        }
+        return res;
+    }
+
+    double[][] getQ_pts() {
+        return this.q_pts;
+    }
+
+    double[][] getK_pts() {
+        return this.k_pts;
+    }
+
+    double[][] getMappedQ_pts() {
+        return this.mapPoints(this.q_pts, true);
+    }
+
+    double[][] getMappedK_pts() {
+        return this.mapPoints(this.k_pts, false);
+    }
+
+    PointRoi getMappedQ_ptsAsRoi() {
+        return this.mapPointsAsRoi(this.q_pts, true);
+    }
+
+    PointRoi getMappedK_ptsAsRoi() {
+        return this.mapPointsAsRoi(this.k_pts, false);
     }
 }
