@@ -275,7 +275,7 @@ public class Align_Runner implements PlugIn {
                 "Calculating similarity scores...",
                 "Cleaning up..."};
         int[] progressLevel = {5, 25, 50, 75, 99};
-        final int[] i = {0};
+        final int[] status = {0};
 
         Thread work = new Thread(new Runnable() {
             @Override
@@ -300,12 +300,12 @@ public class Align_Runner implements PlugIn {
                     }
 
                     /* find max clique (TODO: lower_bound) */
-                    i[0] += 1;
+                    status[0] += 1;
                     System.out.println("max clique");
                     c = this.get_clique();
 
                     /* find transform fit */
-                    i[0] += 1;
+                    status[0] += 1;
                     qc = new double[c.size()][2];
                     kc = new double[c.size()][2];
                     for (int j = 0; j < c.size(); ++j) {
@@ -320,7 +320,7 @@ public class Align_Runner implements PlugIn {
                         ));
                     }
                     Thread.sleep(250);
-                    i[0] += 1;
+                    status[0] += 1;
 
                     System.out.println("fitting tform...");
                     tfunc.fit(corr);
@@ -331,11 +331,11 @@ public class Align_Runner implements PlugIn {
                         throw new IOException("unable to save zip");
                     }
                     rimg.show();
-                    i[0] += 1;
+                    status[0] += 1;
                 } catch (Exception e) {
                     System.out.println("failed: " + e.getMessage() + " " + e);
                     e.printStackTrace();
-                    i[0] = -1;
+                    status[0] = -1;
                 }
             }
 
@@ -343,7 +343,7 @@ public class Align_Runner implements PlugIn {
                 Mapper3 x = new Mapper3();
                 org.ahgamut.clqmtch.Graph g = x.construct_graph(q_pts, q_pts.length, k_pts, k_pts.length,
                         delta, epsilon, min_ratio, max_ratio);
-                i[0] += 1;
+                status[0] += 1;
                 org.ahgamut.clqmtch.StackDFS s = new StackDFS();
                 s.process_graph(g); /* warning is glitch */
                 System.out.println(g.toString());
@@ -369,17 +369,13 @@ public class Align_Runner implements PlugIn {
                 }
 
                 /* transform images via fit */
-                ImagePlus tq = new ImagePlus();
-                tq.setProcessor(q_stack.getProcessor(1));
-                ImageProcessor q1 = colorify(tq).getProcessor();
+                ImageProcessor q1 = colorify(q_stack.getProcessor(1)).getProcessor();
 
-                tq.setProcessor(q_stack.getProcessor(2));
-                ImageProcessor q2 = burnPoints(tq, qp1, kp1).getProcessor().duplicate();
+                ImageProcessor q2 = burnPoints(q_stack.getProcessor(2), qp1, kp1).getProcessor();
 
                 ImageProcessor k1 = k_stack.getProcessor(1).createProcessor(q1.getWidth(), q1.getHeight());
                 tform.mapInterpolated(k_stack.getProcessor(1), k1);
-                tq.setProcessor(k1);
-                k1 = colorify(tq).getProcessor();
+                k1 = colorify(k1).getProcessor();
 
                 res.addSlice(q1);
                 res.addSlice(k1);
@@ -421,21 +417,21 @@ public class Align_Runner implements PlugIn {
                 }
             }
 
-            ImagePlus colorify(ImagePlus imp) {
+            ImagePlus colorify(ImageProcessor imp) {
                 BufferedImage bi = new BufferedImage(imp.getWidth(), imp.getHeight(), BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g = (Graphics2D) bi.getGraphics();
                 g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                         RenderingHints.VALUE_ANTIALIAS_ON);
-                g.drawImage(imp.getImage(), 0, 0, null);
+                g.drawImage(imp.createImage(), 0, 0, null);
                 return new ImagePlus("", new ColorProcessor(bi));
             }
 
-            ImagePlus burnPoints(ImagePlus imp, PointRoi q_pts, PointRoi k_pts) {
+            ImagePlus burnPoints(ImageProcessor imp, PointRoi q_pts, PointRoi k_pts) {
                 BufferedImage bi = new BufferedImage(imp.getWidth(), imp.getHeight(), BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g = (Graphics2D) bi.getGraphics();
                 g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                         RenderingHints.VALUE_ANTIALIAS_ON);
-                g.drawImage(imp.getImage(), 0, 0, null);
+                g.drawImage(imp.createImage(), 0, 0, null);
                 g.setStroke(new BasicStroke(16.5F));
                 g.setPaint(Color.RED);
                 for (Point p : q_pts) {
@@ -463,9 +459,9 @@ public class Align_Runner implements PlugIn {
             @Override
             public void run() {
                 try {
-                    while (i[0] >= 0 && i[0] < works.length) {
-                        currentWork.setText(works[i[0]]);
-                        bar.setValue(progressLevel[i[0]]);
+                    while (status[0] >= 0 && status[0] < works.length) {
+                        currentWork.setText(works[status[0]]);
+                        bar.setValue(progressLevel[status[0]]);
                         Thread.sleep(275);
                     }
                     frame.setVisible(false);
