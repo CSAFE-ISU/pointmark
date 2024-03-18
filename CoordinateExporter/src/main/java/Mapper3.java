@@ -1,3 +1,6 @@
+import java.util.function.IntConsumer;
+import java.util.stream.IntStream;
+
 public class Mapper3 {
     static final double MIN_DIST = 1e-3;
     // static final double MIN_ANGLE = 5e-3;
@@ -35,10 +38,10 @@ public class Mapper3 {
     }
 
     public org.ahgamut.clqmtch.Graph construct_graph(java.awt.Point[] q_pts, int qlen,
-                                java.awt.Point[] k_pts, int klen,
-                                 double delta, double epsilon,
-                                 double min_ratio,
-                                 double max_ratio) {
+                                                     java.awt.Point[] k_pts, int klen,
+                                                     double delta, double epsilon,
+                                                     double min_ratio,
+                                                     double max_ratio) {
         /* set ratios before anything */
         MIN_RATIO = min_ratio;
         MAX_RATIO = max_ratio;
@@ -54,90 +57,84 @@ public class Mapper3 {
 
         Point[] q = new Point[qlen];
         Point[] k = new Point[klen];
-        int zz;
 
-        for (zz = 0; zz < qlen; zz++) {
-            q[zz] = new Point(q_pts[zz].getX(), q_pts[zz].getY());
-        }
+        IntStream.range(0, qlen)
+                .parallel()
+                .unordered()
+                .forEach(z -> q[z] = new Point(q_pts[z].getX(), q_pts[z].getY()));
 
-        for (zz = 0; zz < klen; zz++) {
-            k[zz] = new Point(k_pts[zz].getX(), k_pts[zz].getY());
-        }
+        IntStream.range(0, klen)
+                .parallel()
+                .unordered()
+                .forEach(z -> k[z] = new Point(k_pts[z].getX(), k_pts[z].getY()));
 
         /* declare Triple arrays and sizes */
         int M = (qlen * (qlen - 1) * (qlen - 2)) / 6;
         int N = (klen * (klen - 1) * (klen - 2)) / 6;
-        int valid_M = 0;
-        int valid_N = 0;
-        Triple []qt = new Triple[M];
-        Triple []kt = new Triple[N];
+        Triple[] qt = new Triple[M];
+        Triple[] kt = new Triple[N];
 
         AdjMat adjmat = new AdjMat(qlen, klen);
         // default initialized to zero
         org.ahgamut.clqmtch.Graph res = new org.ahgamut.clqmtch.Graph();
 
-        int ix, iy;
-        boolean[] check = new boolean[8];
-
-        // int i1, j1, k1;
-        Coeff3 c1 = new Coeff3(0, 0,0 );
-        // int i2, j2, k2;
-        Coeff3 c2 = new Coeff3(0, 0,0 );
-
-
         /* fill the first set of triples */
-        for (ix = 0; ix < M; ++ix) {
-            qt[ix] = new Triple();
-            invert_combi(qlen, ix, qt, q);
-            valid_M += qt[ix].valid ? 1 : 0;
-        }
+        IntStream.range(0, M).parallel()
+                .unordered()
+                .forEach(z -> {
+                    qt[z] = new Triple();
+                    invert_combi(qlen, z, qt, q);
+                });
 
         /* fill the second set of triples */
-        for (iy = 0; iy < N; ++iy) {
-            kt[iy] = new Triple();
-            invert_combi(klen, iy, kt, k);
-            valid_N += kt[iy].valid ? 1 : 0;
-        }
+        IntStream.range(0, N).parallel()
+                .unordered()
+                .forEach(z -> {
+                    kt[z] = new Triple();
+                    invert_combi(klen, z, kt, k);
+                });
 
         /* construct the correspondence graph */
-        for (ix = 0; ix < M; ix++) {
-            for (iy = 0; iy < N; iy++) {
-                if (qt[ix].valid && kt[iy].valid) {
-                    /* the compare call needs to happen here */
-                    /* and then you write into adjmat */
-                    qt[ix].ret0(c1);
-                    qt[ix].compare(kt[iy], check, delta, epsilon);
-                    if (check[0]) {
-                        kt[iy].ret0(c2);
-                        adjmat.add_edge(c1, c2);
-                    }
-                    if (check[1]) {
-                        kt[iy].ret1(c2);
-                        adjmat.add_edge(c1, c2);
-                    }
-                    if (check[2]) {
-                        kt[iy].ret2(c2);
-                        adjmat.add_edge(c1, c2);
-                    }
-                    if (check[3]) {
-                        kt[iy].ret3(c2);
-                        adjmat.add_edge(c1, c2);
-                    }
-                    if (check[4]) {
-                        kt[iy].ret4(c2);
-                        adjmat.add_edge(c1, c2);
-                    }
-                    if (check[5]) {
-                        kt[iy].ret5(c2);
-                        adjmat.add_edge(c1, c2);
-                    }
-                }
-            }
-        }
-
-        System.out.printf("%d valid triangles out of %d in Q\n", valid_M, M);
-        System.out.printf("%d valid triangles out of %d in K\n", valid_N, N);
-
+        IntStream.range(0, M).parallel()
+                .unordered().forEach(ix -> {
+                            Coeff3 c1 = new Coeff3(0, 0, 0);
+                            IntStream.range(0, N).parallel()
+                                    .unordered().forEach(iy -> {
+                                        Coeff3 c2 = new Coeff3(0, 0, 0);
+                                        boolean[] check = new boolean[8];
+                                        if (qt[ix].valid && kt[iy].valid) {
+                                            /* the compare call needs to happen here */
+                                            /* and then you write into adjmat */
+                                            qt[ix].ret0(c1);
+                                            qt[ix].compare(kt[iy], check, delta, epsilon);
+                                            if (check[0]) {
+                                                kt[iy].ret0(c2);
+                                                adjmat.add_edge(c1, c2);
+                                            }
+                                            if (check[1]) {
+                                                kt[iy].ret1(c2);
+                                                adjmat.add_edge(c1, c2);
+                                            }
+                                            if (check[2]) {
+                                                kt[iy].ret2(c2);
+                                                adjmat.add_edge(c1, c2);
+                                            }
+                                            if (check[3]) {
+                                                kt[iy].ret3(c2);
+                                                adjmat.add_edge(c1, c2);
+                                            }
+                                            if (check[4]) {
+                                                kt[iy].ret4(c2);
+                                                adjmat.add_edge(c1, c2);
+                                            }
+                                            if (check[5]) {
+                                                kt[iy].ret5(c2);
+                                                adjmat.add_edge(c1, c2);
+                                            }
+                                        }
+                                    });
+                        }
+                );
         res.load_matrix(adjmat.matsize, adjmat.mat);
 
         /* reset ratios to default */
@@ -362,7 +359,7 @@ public class Mapper3 {
         int matsize;
         int qlen;
         int klen;
-        char [][]mat;
+        char[][] mat;
 
         AdjMat(int qlen, int klen) {
             this.qlen = qlen;
