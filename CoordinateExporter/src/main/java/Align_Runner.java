@@ -276,7 +276,7 @@ public class Align_Runner implements PlugIn {
                 "Checking scales...",
                 "Aligning...",
                 "Calculating similarity scores...",
-                "Cleaning up..."};
+                "Saving ZIP..."};
         int[] progressLevel = {5, 25, 50, 75, 99};
         final int[] status = {0};
 
@@ -300,12 +300,12 @@ public class Align_Runner implements PlugIn {
                     aip.estimate();
                     status[0] += 1;
 
-                    ImagePlus rimg = createOverlay(aip);
-                    if (!saveOverlay(rimg.getImageStack())) {
+                    if (!saveOverlay(aip)) {
                         throw new IOException("unable to save zip");
                     }
-                    rimg.show();
+                    ImagePlus rimg = createOverlay(aip);
                     status[0] += 1;
+                    rimg.show();
                 } catch (Exception e) {
                     System.out.println("failed: " + e.getMessage() + " " + e);
                     e.printStackTrace();
@@ -369,36 +369,81 @@ public class Align_Runner implements PlugIn {
                 return new ImagePlus("Overlay", res);
             }
 
-            boolean saveOverlay(ImageStack ov_stack) {
+            boolean saveOverlay(AlignImagePairFromPoints<?> aip) {
+                ij.ImageStack q_stack = q_img.getImageStack();
+                Point[] qp1 = q_pts;
+                ArrayList<Integer> qc_ind = aip.getCorrQ_ind();
+                Stroke qs = new BasicStroke(18F);
+                Color qcol = Color.RED;
+
+                ij.ImageStack k_stack = k_img.getImageStack();
+                Point[] kp1 = aip.getMappedK_ptsAsRoi().getContainedPoints();
+                ArrayList<Integer> kc_ind = aip.getCorrK_ind();
+                Stroke ks = new BasicStroke(12F);
+                Color kcol = Color.BLUE;
+
                 System.out.println("Saving to " + targ_zip);
                 DataOutputStream out;
                 FileInfo info;
                 ImagePlus img;
                 TiffEncoder te;
+
+                BufferedImage bi;
+                Graphics2D g;
+
+                ImageProcessor temp;
+                ImageStack res_stack = new ImageStack();
+
+                /* add Q image */
+                bi = getWritableImage(q_stack.getProcessor(3));
+                res_stack.addSlice("image_1", rasterize(bi).getProcessor());
+
+                /* add Q mask */
+                bi = getWritableImage(q_stack.getProcessor(2));
+                g = (Graphics2D) bi.getGraphics();
+                res_stack.addSlice("mask_1", rasterize(bi).getProcessor());
+
+                /* add Q annotations */
+                bi = getWritableImage(q_stack.getProcessor(2).createProcessor(q_stack.getWidth(), q_stack.getHeight()));
+                g = (Graphics2D) bi.getGraphics();
+                burnPoints(g, qp1, qc_ind, qs, qcol);
+                res_stack.addSlice("points_1", rasterize(bi).getProcessor());
+
+                /* add transformed K image */
+                temp = k_stack.getProcessor(3).createProcessor(q_stack.getWidth(), q_stack.getHeight());
+                aip.mapImage(k_stack.getProcessor(3), false, temp);
+                bi = getWritableImage(temp);
+                res_stack.addSlice("image_2", rasterize(bi).getProcessor());
+
+                /* add transformed K mask */
+                temp = k_stack.getProcessor(2).createProcessor(q_stack.getWidth(), q_stack.getHeight());
+                aip.mapImage(k_stack.getProcessor(2), false, temp);
+                bi = getWritableImage(temp);
+                res_stack.addSlice("mask_2", rasterize(bi).getProcessor());
+
+                /* add transformed K annotations */
+                temp = k_stack.getProcessor(2).createProcessor(q_stack.getWidth(), q_stack.getHeight());
+                bi = getWritableImage(temp);
+                g = (Graphics2D) bi.getGraphics();
+                burnPoints(g, kp1, kc_ind, ks, kcol);
+                res_stack.addSlice("points_2", rasterize(bi).getProcessor());
+
                 try {
                     ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(Paths.get(targ_zip)));
                     out = new DataOutputStream(new BufferedOutputStream(zos, 4096));
-                    img = new ImagePlus("", ov_stack.getProcessor(1));
-                    info = img.getFileInfo();
-                    zos.putNextEntry(new ZipEntry("image_1.tiff"));
-                    te = new TiffEncoder(info);
-                    te.write(out);
-
-                    img = new ImagePlus("", ov_stack.getProcessor(2));
-                    info = img.getFileInfo();
-                    zos.putNextEntry(new ZipEntry("image_2.tiff"));
-                    te = new TiffEncoder(info);
-                    te.write(out);
-
-                    img = new ImagePlus("", ov_stack.getProcessor(3));
-                    info = img.getFileInfo();
-                    zos.putNextEntry(new ZipEntry("aligned_points.tiff"));
-                    te = new TiffEncoder(info);
-                    te.write(out);
-
+                    for (int j = 1; j <= 6; ++j) {
+                        img = new ImagePlus("", res_stack.getProcessor(j));
+                        info = img.getFileInfo();
+                        zos.putNextEntry(new ZipEntry(res_stack.getSliceLabel(j) + ".tiff"));
+                        te = new TiffEncoder(info);
+                        System.out.println(res_stack.getSliceLabel(j));
+                        te.write(out);
+                    }
                     out.close();
                     return true;
                 } catch (Exception e) {
+                    System.out.println("failed: " + e.getMessage() + " " + e);
+                    e.printStackTrace();
                     return false;
                 }
             }
