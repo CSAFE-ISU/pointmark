@@ -23,10 +23,12 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -299,7 +301,6 @@ public class Align_Runner implements PlugIn {
                     status[0] += 1;
 
                     ImagePlus rimg = createOverlay(aip);
-                    System.out.println("saving...");
                     if (!saveOverlay(rimg.getImageStack())) {
                         throw new IOException("unable to save zip");
                     }
@@ -324,19 +325,44 @@ public class Align_Runner implements PlugIn {
             }
 
             ImagePlus createOverlay(AlignImagePairFromPoints<?> aip) {
-                ij.ImageStack res = new ImageStack();
                 ij.ImageStack q_stack = q_img.getImageStack();
+                Point[] qp1 = q_pts;
+                ArrayList<Integer> qc_ind = aip.getCorrQ_ind();
+                Stroke qs = new BasicStroke(18F);
+                Color qcol = Color.RED;
+
                 ij.ImageStack k_stack = k_img.getImageStack();
-                PointRoi qp1 = ((PointRoi) q_img.getProperty("points"));
-                PointRoi kp1 = aip.getMappedK_ptsAsRoi();
+                Point[] kp1 = aip.getMappedK_ptsAsRoi().getContainedPoints();
+                ArrayList<Integer> kc_ind = aip.getCorrK_ind();
+                Stroke ks = new BasicStroke(12F);
+                Color kcol = Color.BLUE;
+
+                /* render necessary things on overlay */
+                BufferedImage bi;
+                Graphics2D g;
+
+                bi = getWritableImage(q_stack.getProcessor(1));
+                g = (Graphics2D) bi.getGraphics();
+                burnPoints(g, qp1, qc_ind, qs, qcol);
+                burnPoints(g, kp1, kc_ind, ks, kcol);
+                ImageProcessor q1 = rasterize(bi).getProcessor();
+
+                bi = getWritableImage(q_stack.getProcessor(2));
+                g = (Graphics2D) bi.getGraphics();
+                burnPoints(g, qp1, qc_ind, qs, qcol);
+                burnPoints(g, kp1, kc_ind, ks, kcol);
+                ImageProcessor q2 = rasterize(bi).getProcessor();
 
                 /* transform images via fit */
-                ImageProcessor q1 = colorify(q_stack.getProcessor(1)).getProcessor();
-                ImageProcessor q2 = burnPoints(q_stack.getProcessor(2), qp1, kp1).getProcessor();
                 ImageProcessor k1 = k_stack.getProcessor(1).createProcessor(q1.getWidth(), q1.getHeight());
                 aip.mapImage(k_stack.getProcessor(1), false, k1);
-                k1 = colorify(k1).getProcessor();
+                bi = getWritableImage(k1);
+                g = (Graphics2D) bi.getGraphics();
+                burnPoints(g, qp1, qc_ind, qs, qcol);
+                burnPoints(g, kp1, kc_ind, ks, kcol);
+                k1 = rasterize(bi).getProcessor();
 
+                ij.ImageStack res = new ImageStack();
                 res.addSlice(q1);
                 res.addSlice(k1);
                 res.addSlice(q2);
@@ -377,32 +403,29 @@ public class Align_Runner implements PlugIn {
                 }
             }
 
-            ImagePlus colorify(ImageProcessor imp) {
+            BufferedImage getWritableImage(ImageProcessor imp) {
                 BufferedImage bi = new BufferedImage(imp.getWidth(), imp.getHeight(), BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g = (Graphics2D) bi.getGraphics();
                 g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                         RenderingHints.VALUE_ANTIALIAS_ON);
                 g.drawImage(imp.createImage(), 0, 0, null);
+                return bi;
+            }
+
+            ImagePlus rasterize(BufferedImage bi) {
                 return new ImagePlus("", new ColorProcessor(bi));
             }
 
-            ImagePlus burnPoints(ImageProcessor imp, PointRoi q_pts, PointRoi k_pts) {
-                BufferedImage bi = new BufferedImage(imp.getWidth(), imp.getHeight(), BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g = (Graphics2D) bi.getGraphics();
-                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
-                g.drawImage(imp.createImage(), 0, 0, null);
-                g.setStroke(new BasicStroke(16.5F));
-                g.setPaint(Color.RED);
-                for (Point p : q_pts) {
-                    g.drawOval(p.x, p.y, 75, 75);
+            void burnPoints(Graphics2D g, Point[] pts, ArrayList<Integer> clq_ind, Stroke s, Color c) {
+                g.setStroke(s);
+                g.setPaint(c);
+                for (int j = 0; j < pts.length; ++j) {
+                    if (clq_ind.contains(j)) {
+                        g.drawRect(pts[j].x, pts[j].y, 53, 53);
+                    } else {
+                        g.drawOval(pts[j].x, pts[j].y, 75, 75);
+                    }
                 }
-                g.setStroke(new BasicStroke(18.5F));
-                g.setPaint(Color.BLUE);
-                for (Point p : k_pts) {
-                    g.drawRect(p.x, p.y, 53, 53);
-                }
-                return new ImagePlus("", new ColorProcessor(bi));
             }
         });
 
@@ -419,14 +442,20 @@ public class Align_Runner implements PlugIn {
             @Override
             public void run() {
                 try {
+                    q_img.lock();
+                    k_img.lock();
                     while (status[0] >= 0 && status[0] < works.length) {
                         currentWork.setText(works[status[0]]);
                         bar.setValue(progressLevel[status[0]]);
                         Thread.sleep(275);
                     }
                     frame.setVisible(false);
+                    q_img.unlock();
+                    k_img.unlock();
                     System.out.println("complete");
                 } catch (Exception ignored) {
+                    q_img.unlock();
+                    k_img.unlock();
                 }
             }
         });
@@ -438,13 +467,16 @@ public class Align_Runner implements PlugIn {
     }
 }
 
+
 class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
     private final T tform_q2k;
     private final T tform_k2q;
     private double[][] q_pts;
     private double[][] qc;
+    ArrayList<Integer> qc_ind;
     private double[][] k_pts;
     private double[][] kc;
+    ArrayList<Integer> kc_ind;
     private int[] clique;
 
     public AlignImagePairFromPoints(Supplier<? extends T> ctor) {
@@ -458,6 +490,8 @@ class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
         qc = new double[c.size()][2];
         kc = new double[c.size()][2];
         clique = new int[c.size()];
+        qc_ind = new ArrayList<>();
+        kc_ind = new ArrayList<>();
 
         int j, qlen, klen;
         qlen = q_pt0.length;
@@ -484,19 +518,30 @@ class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
         ArrayList<PointMatch> corr_q2k = new ArrayList<>();
         for (j = 0; j < csize; ++j) {
             int z = clique[j];
+            /* save the indices of corresponding points */
+            qc_ind.add(z / k_pts.length);
+            kc_ind.add(z % k_pts.length);
+
+            /* save the corresponding points */
             qc[j][0] = q_pts[z / k_pts.length][0];
             qc[j][1] = q_pts[z / k_pts.length][1];
             kc[j][0] = k_pts[z % k_pts.length][0];
             kc[j][1] = k_pts[z % k_pts.length][1];
+
+            /* save the forward mapping */
             corr_k2q.add(new PointMatch(
                     new mpicbg.models.Point(kc[j]),
                     new mpicbg.models.Point(qc[j])
             ));
+
+            /* save the backward mapping */
             corr_q2k.add(new PointMatch(
                     new mpicbg.models.Point(qc[j]),
                     new mpicbg.models.Point(kc[j])
             ));
         }
+        Collections.sort(qc_ind);
+        Collections.sort(kc_ind);
         tform_q2k.fit(corr_q2k);
         tform_k2q.fit(corr_k2q);
     }
@@ -545,6 +590,14 @@ class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
         return res;
     }
 
+    private PointRoi getPointsAsRoi(double[][] pts) {
+        PointRoi res = new PointRoi();
+        for (double[] pt : pts) {
+            res.addPoint(pt[0], pt[1]);
+        }
+        return res;
+    }
+
     double[][] getQ_pts() {
         return this.q_pts;
     }
@@ -567,5 +620,13 @@ class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
 
     PointRoi getMappedK_ptsAsRoi() {
         return this.mapPointsAsRoi(this.k_pts, false);
+    }
+
+    ArrayList<Integer> getCorrQ_ind() {
+        return this.qc_ind;
+    }
+
+    ArrayList<Integer> getCorrK_ind() {
+        return this.kc_ind;
     }
 }
