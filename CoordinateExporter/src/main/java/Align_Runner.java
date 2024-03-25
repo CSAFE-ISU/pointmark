@@ -11,6 +11,8 @@ import ij.process.ImageProcessor;
 import mpicbg.ij.TransformMapping;
 import mpicbg.models.*;
 import org.ahgamut.clqmtch.StackDFS;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -24,6 +26,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.Buffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
@@ -137,9 +140,9 @@ public class Align_Runner implements PlugIn {
             Q_imgs.addItem(tmp.getShortTitle());
             K_imgs.addItem(tmp.getShortTitle());
         }
-        panel.add(new JLabel("Trying to Compare:"));
+        panel.add(new JLabel("Questioned Image:"));
         panel.add(Q_imgs);
-        panel.add(new JLabel("and"));
+        panel.add(new JLabel("Reference Image:"));
         panel.add(K_imgs);
 
         panel.add(new JLabel(""));
@@ -280,6 +283,12 @@ public class Align_Runner implements PlugIn {
         int[] progressLevel = {5, 25, 50, 75, 99};
         final int[] status = {0};
 
+        JPanel subpanel = new JPanel(new GridLayout(2, 1));
+        JProgressBar bar = new JProgressBar();
+        JLabel currentWork = new JLabel();
+        subpanel.add(currentWork);
+        subpanel.add(bar);
+
         Thread work = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -303,9 +312,12 @@ public class Align_Runner implements PlugIn {
                     if (!saveOverlay(aip)) {
                         throw new IOException("unable to save zip");
                     }
-                    ImagePlus rimg = createOverlay(aip);
                     status[0] += 1;
-                    rimg.show();
+
+                    if (showOverlay) {
+                        ImagePlus rimg = createOverlay(aip);
+                        rimg.show();
+                    }
                 } catch (Exception e) {
                     System.out.println("failed: " + e.getMessage() + " " + e);
                     e.printStackTrace();
@@ -371,12 +383,13 @@ public class Align_Runner implements PlugIn {
 
             boolean saveOverlay(AlignImagePairFromPoints<?> aip) {
                 ij.ImageStack q_stack = q_img.getImageStack();
-                Point[] qp1 = q_pts;
+                Point[] qp0 = q_pts;
                 ArrayList<Integer> qc_ind = aip.getCorrQ_ind();
                 Stroke qs = new BasicStroke(18F);
                 Color qcol = Color.RED;
 
                 ij.ImageStack k_stack = k_img.getImageStack();
+                Point[] kp0 = k_pts;
                 Point[] kp1 = aip.getMappedK_ptsAsRoi().getContainedPoints();
                 ArrayList<Integer> kc_ind = aip.getCorrK_ind();
                 Stroke ks = new BasicStroke(12F);
@@ -392,53 +405,82 @@ public class Align_Runner implements PlugIn {
                 Graphics2D g;
 
                 ImageProcessor temp;
+                MarkupData m;
                 ImageStack res_stack = new ImageStack();
 
                 /* add Q image */
                 bi = getWritableImage(q_stack.getProcessor(3));
-                res_stack.addSlice("image_1", rasterize(bi).getProcessor());
+                res_stack.addSlice("Q_image", rasterize(bi).getProcessor());
 
                 /* add Q mask */
                 bi = getWritableImage(q_stack.getProcessor(2));
-                g = (Graphics2D) bi.getGraphics();
-                res_stack.addSlice("mask_1", rasterize(bi).getProcessor());
+                res_stack.addSlice("Q_mask", rasterize(bi).getProcessor());
 
                 /* add Q annotations */
                 bi = getWritableImage(q_stack.getProcessor(2).createProcessor(q_stack.getWidth(), q_stack.getHeight()));
                 g = (Graphics2D) bi.getGraphics();
-                burnPoints(g, qp1, qc_ind, qs, qcol);
-                res_stack.addSlice("points_1", rasterize(bi).getProcessor());
+                burnPoints(g, qp0, qc_ind, qs, qcol);
+                res_stack.addSlice("Q_points", rasterize(bi).getProcessor());
+
+                /* add K image */
+                bi = getWritableImage(k_stack.getProcessor(3));
+                res_stack.addSlice("K_image", rasterize(bi).getProcessor());
+
+                /* add K mask */
+                bi = getWritableImage(k_stack.getProcessor(2));
+                res_stack.addSlice("K_mask", rasterize(bi).getProcessor());
+
+                /* add K annotations */
+                bi = getWritableImage(k_stack.getProcessor(2).createProcessor(k_stack.getWidth(), k_stack.getHeight()));
+                g = (Graphics2D) bi.getGraphics();
+                burnPoints(g, kp0, kc_ind, ks, kcol);
+                res_stack.addSlice("K_points", rasterize(bi).getProcessor());
 
                 /* add transformed K image */
                 temp = k_stack.getProcessor(3).createProcessor(q_stack.getWidth(), q_stack.getHeight());
                 aip.mapImage(k_stack.getProcessor(3), false, temp);
                 bi = getWritableImage(temp);
-                res_stack.addSlice("image_2", rasterize(bi).getProcessor());
+                res_stack.addSlice("K_image_MAPPED", rasterize(bi).getProcessor());
 
                 /* add transformed K mask */
                 temp = k_stack.getProcessor(2).createProcessor(q_stack.getWidth(), q_stack.getHeight());
                 aip.mapImage(k_stack.getProcessor(2), false, temp);
                 bi = getWritableImage(temp);
-                res_stack.addSlice("mask_2", rasterize(bi).getProcessor());
+                res_stack.addSlice("K_mask_MAPPED", rasterize(bi).getProcessor());
 
                 /* add transformed K annotations */
                 temp = k_stack.getProcessor(2).createProcessor(q_stack.getWidth(), q_stack.getHeight());
                 bi = getWritableImage(temp);
                 g = (Graphics2D) bi.getGraphics();
                 burnPoints(g, kp1, kc_ind, ks, kcol);
-                res_stack.addSlice("points_2", rasterize(bi).getProcessor());
+                res_stack.addSlice("K_points_MAPPED", rasterize(bi).getProcessor());
 
                 try {
                     ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(Paths.get(targ_zip)));
                     out = new DataOutputStream(new BufferedOutputStream(zos, 4096));
-                    for (int j = 1; j <= 6; ++j) {
+                    int n = res_stack.size();
+                    for (int j = 1; j <= n; ++j) {
+                        String tmp = res_stack.getSliceLabel(j);
+                        currentWork.setText("Saving in ZIP: " + tmp);
                         img = new ImagePlus("", res_stack.getProcessor(j));
                         info = img.getFileInfo();
-                        zos.putNextEntry(new ZipEntry(res_stack.getSliceLabel(j) + ".tiff"));
+                        zos.putNextEntry(new ZipEntry(tmp + ".tiff"));
                         te = new TiffEncoder(info);
                         System.out.println(res_stack.getSliceLabel(j));
                         te.write(out);
                     }
+
+                    m = MarkupData.fromROIPair((PolygonRoi) q_img.getProperty("bounds"), (PointRoi) q_img.getProperty("points"));
+                    zos.putNextEntry(new ZipEntry("Q_markup.json"));
+                    zos.write(m.toJSON().toString().getBytes(StandardCharsets.UTF_8));
+
+                    m = MarkupData.fromROIPair((PolygonRoi) k_img.getProperty("bounds"), (PointRoi) k_img.getProperty("points"));
+                    zos.putNextEntry(new ZipEntry("K_markup.json"));
+                    zos.write(m.toJSON().toString().getBytes(StandardCharsets.UTF_8));
+
+                    zos.putNextEntry(new ZipEntry("align_points.json"));
+                    zos.write(aip.toJSON().toString().getBytes(StandardCharsets.UTF_8));
+
                     out.close();
                     return true;
                 } catch (Exception e) {
@@ -475,11 +517,6 @@ public class Align_Runner implements PlugIn {
         });
 
         JFrame frame = new JFrame();
-        JPanel subpanel = new JPanel(new GridLayout(2, 1));
-        JProgressBar bar = new JProgressBar();
-        JLabel currentWork = new JLabel();
-        subpanel.add(currentWork);
-        subpanel.add(bar);
         frame.setContentPane(subpanel);
         frame.setSize(320, 240);
 
@@ -490,7 +527,9 @@ public class Align_Runner implements PlugIn {
                     q_img.lock();
                     k_img.lock();
                     while (status[0] >= 0 && status[0] < works.length) {
-                        currentWork.setText(works[status[0]]);
+                        if (status[0] != works.length - 1) {
+                            currentWork.setText(works[status[0]]);
+                        }
                         bar.setValue(progressLevel[status[0]]);
                         Thread.sleep(275);
                     }
@@ -516,12 +555,12 @@ public class Align_Runner implements PlugIn {
 class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
     private final T tform_q2k;
     private final T tform_k2q;
+    ArrayList<Integer> qc_ind;
+    ArrayList<Integer> kc_ind;
     private double[][] q_pts;
     private double[][] qc;
-    ArrayList<Integer> qc_ind;
     private double[][] k_pts;
     private double[][] kc;
-    ArrayList<Integer> kc_ind;
     private int[] clique;
 
     public AlignImagePairFromPoints(Supplier<? extends T> ctor) {
@@ -673,5 +712,36 @@ class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
 
     ArrayList<Integer> getCorrK_ind() {
         return this.kc_ind;
+    }
+
+    JSONObject pointData(double[][] pts, ArrayList<Integer> indices) {
+        JSONObject res = new JSONObject();
+
+        JSONArray jcp = new JSONArray();
+        for (double[] z : pts) {
+            JSONArray tmp = new JSONArray();
+            tmp.put(z[0]);
+            tmp.put(z[1]);
+            jcp.put(tmp);
+        }
+        res.put("points", jcp);
+
+        /* indices are of no use unless you have an un-modified
+        markup.json, but we save them anyway, in case there is
+        some post-processing help */
+        JSONArray jci = new JSONArray();
+        for (Integer i : indices) {
+            jci.put(i);
+        }
+        res.put("indices", jci);
+        return res;
+    }
+
+    public JSONObject toJSON() {
+        JSONObject result = new JSONObject();
+        result.put("Q", pointData(q_pts, qc_ind));
+        result.put("K", pointData(k_pts, kc_ind));
+        /* TODO: include transformation coefficients? transformed point clouds? */
+        return result;
     }
 }
