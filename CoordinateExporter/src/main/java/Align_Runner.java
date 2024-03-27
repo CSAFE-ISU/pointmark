@@ -97,7 +97,7 @@ public class Align_Runner implements PlugIn {
     }
 
     void cannotStart() {
-        dummy.setText("you need to have 2 images open!");
+        dummy.setText("You need to have 2 valid images open!");
         uiLoaded = false;
     }
 
@@ -108,6 +108,7 @@ public class Align_Runner implements PlugIn {
 
     boolean UICheck() {
         int[] idList = WindowManager.getIDList();
+        int valid_images = 0;
         if (idList == null || idList.length < 2) {
             cannotStart();
             return false;
@@ -115,15 +116,19 @@ public class Align_Runner implements PlugIn {
         for (int id : idList) {
             ImagePlus img = WindowManager.getImage(id);
             if (img == null) {
-                cannotStart();
-                return false;
+                continue;
+
             }
             PolygonRoi pol = (PolygonRoi) img.getProperty("bounds");
             PointRoi pts = (PointRoi) img.getProperty("points");
             if (pol == null || pts == null) {
-                missingMarkup(img);
-                return false;
+                continue;
             }
+            valid_images += 1;
+        }
+        if (valid_images < 2) {
+            cannotStart();
+            return false;
         }
         return true;
     }
