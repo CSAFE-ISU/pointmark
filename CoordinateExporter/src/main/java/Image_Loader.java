@@ -19,7 +19,6 @@ import java.io.File;
 public class Image_Loader implements PlugIn {
     private final JButton imgLoadButton;
     private final JTextArea imgPath;
-    private final JCheckBox markupAvailable;
     private final JButton markupLoadButton;
     private final JTextArea markupPath;
     private final JPanel panel;
@@ -29,7 +28,7 @@ public class Image_Loader implements PlugIn {
     private boolean markup_valid;
 
     public Image_Loader() {
-        this.panel = new JPanel(new GridLayout(6, 2));
+        this.panel = new JPanel(new GridLayout(3, 2));
         this.chooser = new JFileChooser();
 
         this.imgLoadButton = new JButton();
@@ -38,8 +37,6 @@ public class Image_Loader implements PlugIn {
         imgPath.setEditable(false);
         imgPath.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
-        this.markupAvailable = new JCheckBox();
-        markupAvailable.setText("I have already marked up this image");
         this.markupLoadButton = new JButton();
         markupLoadButton.setText("Markup File Location...");
         this.markupPath = new JTextArea();
@@ -61,29 +58,12 @@ public class Image_Loader implements PlugIn {
         panel.add(new JLabel());
         panel.add(imgLoadButton);
         panel.add(imgPath);
-        panel.add(markupAvailable);
-        panel.add(new JLabel());
         panel.add(markupLoadButton);
         panel.add(markupPath);
-        markupAvailable.setSelected(false);
-        markupLoadButton.setEnabled(false);
         markupPath.setEnabled(false);
     }
 
     private void loadReactions() {
-        markupAvailable.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (markupAvailable.isSelected()) {
-                    markupPath.setEnabled(true);
-                    markupLoadButton.setEnabled(true);
-                } else {
-                    markupPath.setEnabled(false);
-                    markupLoadButton.setEnabled(false);
-                }
-            }
-        });
-
         markupLoadButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
