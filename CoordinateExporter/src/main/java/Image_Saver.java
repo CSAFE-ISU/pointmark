@@ -17,7 +17,6 @@ public class Image_Saver {
 
     private final JButton imgSaveButton;
     private final JTextArea imgPath;
-    private final JCheckBox markupAvailable;
     private final JButton markupSaveButton;
     private final JTextArea markupPath;
     private final JPanel panel;
@@ -43,8 +42,6 @@ public class Image_Saver {
         imgPath.setEditable(false);
         imgPath.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
-        this.markupAvailable = new JCheckBox();
-        markupAvailable.setText("Save Markup?");
         this.markupSaveButton = new JButton();
         markupSaveButton.setText("Save Markup To:");
         this.markupPath = new JTextArea();
@@ -82,13 +79,11 @@ public class Image_Saver {
         panel.add(imgs);
         panel.add(imgSaveButton);
         panel.add(imgPath);
-        panel.add(markupAvailable);
+        panel.add(new JLabel());
         panel.add(new JLabel());
         panel.add(markupSaveButton);
         panel.add(markupPath);
 
-        markupAvailable.setSelected(false);
-        markupSaveButton.setEnabled(false);
         markupPath.setEnabled(false);
     }
 
@@ -98,18 +93,6 @@ public class Image_Saver {
             public void actionPerformed(ActionEvent e) {
                 String item = Objects.requireNonNull(imgs.getSelectedItem()).toString();
                 ImagePlus tmp = imgmap.get(item);
-            }
-        });
-        markupAvailable.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (markupAvailable.isSelected()) {
-                    markupPath.setEnabled(true);
-                    markupSaveButton.setEnabled(true);
-                } else {
-                    markupPath.setEnabled(false);
-                    markupSaveButton.setEnabled(false);
-                }
             }
         });
 
@@ -150,6 +133,10 @@ public class Image_Saver {
             File file = chooser.getSelectedFile();
             return file.getAbsolutePath();
         }
+        /* TODO:
+            show some sort of progress when saving,
+            and close the frame at the end
+         */
         return "";
     }
 
