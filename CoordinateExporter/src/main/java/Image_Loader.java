@@ -1,14 +1,11 @@
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.Prefs;
 import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
-import ij.gui.Roi;
 import ij.gui.Toolbar;
 import ij.plugin.PlugIn;
 import ij.process.ImageProcessor;
-import org.json.JSONException;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -18,10 +15,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
 
 public class Image_Loader implements PlugIn {
     private final JButton imgLoadButton;
@@ -137,8 +130,19 @@ public class Image_Loader implements PlugIn {
                 "Load Image and Markup", JOptionPane.OK_CANCEL_OPTION);
         if (p == JOptionPane.CANCEL_OPTION) return;
         if (!img_valid) return;
+
         ImagePlus tmp = IJ.openImage(imgPath.getText());
-        tmp.show();
+        ImageProcessor raw = tmp.getProcessor();
+
+        ImageStack overlay = new ImageStack();
+        ImageProcessor marked = raw.duplicate();
+        ImageProcessor mask = raw.createProcessor(raw.getWidth(), raw.getHeight());
+
+        overlay.addSlice(marked);
+        overlay.addSlice(mask);
+        overlay.addSlice(raw);
+        this.img = new ImagePlus(tmp.getShortTitle(), overlay);
+        this.img.show();
 
         boolean mark_bounds;
         PolygonRoi pol = null;
@@ -151,7 +155,7 @@ public class Image_Loader implements PlugIn {
                     pol = m.getBoundsAsRoi();
                     mark_bounds = true;
                 } else {
-                    this.showBoundsHelper(tmp);
+                    this.showBoundsHelper(img);
                     mark_bounds = false;
                 }
                 if (m.npoints != 0) {
@@ -174,34 +178,33 @@ public class Image_Loader implements PlugIn {
         }
 
         if (!mark_bounds) {
-            pol = this.showBoundsHelper(tmp);
+            pol = this.showBoundsHelper(img);
         }
         if (pol == null || pts == null) {
             return;
         }
-        tmp.setRoi(pol);
-        ImageStack overlay = new ImageStack();
-        ImageProcessor marked = tmp.getProcessor().duplicate();
-        ImageProcessor mask = tmp.createRoiMask();
-        marked.fillOutside(pol);
-        overlay.addSlice(marked);
-        overlay.addSlice(mask);
-        overlay.addSlice(tmp.getProcessor());
 
-        this.img = new ImagePlus(tmp.getShortTitle(), overlay);
+        marked.setColor(Color.BLACK);
+        marked.fillOutside(pol);
+
+        mask.setColor(Color.WHITE);
+        mask.fill(pol);
+
         tmp.close();
+        img.updateAndDraw();
 
         pts.setSize(3);
         pts.setFillColor(Color.RED);
         pts.setStrokeColor(Color.RED);
         img.setProperty("points", pts);
         img.setProperty("bounds", pol);
-        img.setRoi(pts);
+        /* TODO: make behavior consistent
+            when marking anew, the PointRoi does not show on all layers  */
         ij.IJ.setTool("Multi-Point");
-        img.show();
+        img.setRoi(pts);
     }
 
-    PolygonRoi showBoundsHelper(ImagePlus tmp) {
+    PolygonRoi showBoundsHelper(ImagePlus t) {
         final Object obj = new Object();
         ij.IJ.setTool(Toolbar.POLYGON);
         Runnable r = new Runnable() {
@@ -238,7 +241,7 @@ public class Image_Loader implements PlugIn {
             e.printStackTrace();
         }
 
-        PolygonRoi pol = (PolygonRoi) tmp.getRoi();
+        PolygonRoi pol = (PolygonRoi) t.getRoi();
         return pol;
     }
 }
