@@ -12,7 +12,10 @@ import ij.process.ColorProcessor;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 import mpicbg.ij.TransformMapping;
-import mpicbg.models.*;
+import mpicbg.models.AffineModel2D;
+import mpicbg.models.IllDefinedDataPointsException;
+import mpicbg.models.NotEnoughDataPointsException;
+import mpicbg.models.PointMatch;
 import org.ahgamut.clqmtch.StackDFS;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -20,7 +23,6 @@ import org.json.JSONObject;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -29,7 +31,6 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -55,20 +56,14 @@ public class Align_Runner implements PlugIn {
     private final JFormattedTextField deltaT;
     private final JFormattedTextField epsilonT;
     private final JFormattedTextField lowerBoundT;
-    private final JCheckBox viewOverlay;
-    private final JCheckBox viewScores;
     private final JLabel Qimg_points;
     private final JLabel Kimg_points;
-
-    private final JButton overlaySaveButton;
-    private final JTextArea overlayPath;
-
     private String targ_zip;
     private boolean uiLoaded;
 
 
     public Align_Runner() {
-        this.panel = new JPanel(new GridLayout(8, 4));
+        this.panel = new JPanel(new GridLayout(6, 4));
         this.dummy = new JTextArea();
         this.imgmap = new HashMap<>();
         this.Q_imgs = new JComboBox<>();
@@ -82,10 +77,6 @@ public class Align_Runner implements PlugIn {
         this.deltaT = new JFormattedTextField(NumberFormat.getInstance());
         this.epsilonT = new JFormattedTextField(NumberFormat.getInstance());
         this.lowerBoundT = new JFormattedTextField(NumberFormat.getInstance());
-        this.viewOverlay = new JCheckBox();
-        this.viewScores = new JCheckBox();
-        this.overlayPath = new JTextArea();
-        this.overlaySaveButton = new JButton("Select ZIP Filename");
         this.uiLoaded = false;
         this.targ_zip = "";
         loadUI();
@@ -179,16 +170,6 @@ public class Align_Runner implements PlugIn {
         panel.add(new JLabel("points"));
         panel.add(new JLabel("in common"));
 
-        panel.add(overlaySaveButton);
-        panel.add(overlayPath);
-        panel.add(new JLabel("View Overlay?"));
-        panel.add(viewOverlay);
-
-        panel.add(new JLabel("View Similarity Score?"));
-        panel.add(viewScores);
-
-        overlayPath.setEnabled(false);
-        overlayPath.setText(targ_zip);
         loadReactions();
         uiLoaded = true;
     }
@@ -199,9 +180,6 @@ public class Align_Runner implements PlugIn {
         deltaT.setText("0.1");
         epsilonT.setText("0.03");
         lowerBoundT.setText("10");
-        viewOverlay.setSelected(true);
-        viewScores.setSelected(false);
-        viewScores.setEnabled(false);
         Q_imgs.setSelectedIndex(0);
         K_imgs.setSelectedIndex(1);
 
@@ -230,7 +208,7 @@ public class Align_Runner implements PlugIn {
             }
         });
 
-        overlaySaveButton.addActionListener(new ActionListener() {
+        /* overlaySaveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFileChooser chooser = new JFileChooser();
@@ -244,7 +222,7 @@ public class Align_Runner implements PlugIn {
                     overlayPath.setText("");
                 }
             }
-        });
+        }); */
 
         this.getNumPoints(imgmap.get(K_imgs.getSelectedItem()), Kimg_points);
         this.getNumPoints(imgmap.get(Q_imgs.getSelectedItem()), Qimg_points);
@@ -257,15 +235,8 @@ public class Align_Runner implements PlugIn {
     }
 
     public void run(String arg) {
-        int p = JOptionPane.showConfirmDialog(null, this.panel,
-                "Save Image + Markup", JOptionPane.OK_CANCEL_OPTION);
+        int p = JOptionPane.showConfirmDialog(null, this.panel, "Align Images with Markup", JOptionPane.OK_CANCEL_OPTION);
         if (!uiLoaded || p == JOptionPane.CANCEL_OPTION) return;
-        if (overlayPath.getText() == null) return;
-        if (overlayPath.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No ZIP savefile provided!");
-            return;
-        }
-        targ_zip = overlayPath.getText();
         runWithProgress();
     }
 
@@ -281,18 +252,13 @@ public class Align_Runner implements PlugIn {
         double min_ratio = Double.parseDouble(minRatioT.getText());
         double max_ratio = Double.parseDouble(maxRatioT.getText());
         int lower_bound = Integer.parseInt(lowerBoundT.getText());
-        boolean showOverlay = viewOverlay.isSelected();
-        if (!targ_zip.endsWith(".zip")) {
-            targ_zip += ".zip";
-        }
 
-        String[] works = {"Starting...",
-                "Checking scales...",
-                "Aligning...",
-                "Calculating similarity scores...",
-                "Saving ZIP..."};
-        int[] progressLevel = {5, 25, 50, 75, 99};
+        String[] works = {"Starting...", "Checking scales and aligning...",
+                "Calculating similarity scores...", "Creating Overlay...", "Save alignment?", "Saving ZIP File"};
+        int[] progressLevel = {5, 25, 50, 75, 80, 99};
         final int[] status = {0};
+        Thread work = null;
+        Thread ui = null;
 
         JFrame frame = new JFrame();
         frame.setTitle("processing....");
@@ -304,9 +270,10 @@ public class Align_Runner implements PlugIn {
 
         JProgressBar bar = new JProgressBar();
         JLabel currentWork = new JLabel();
-        JButton saveOK = new JButton("Save Overlay?");
+        JButton saveOK = new JButton("Save Info");
         saveOK.setEnabled(false);
-        JButton cancelRun = new JButton("Cancel");
+        JButton cancelRun = new JButton("Don't Save");
+        cancelRun.setEnabled(false);
 
         gbc.gridx = 0;
         gbc.ipady = 40;
@@ -335,40 +302,128 @@ public class Align_Runner implements PlugIn {
         subpanel.add(cancelRun, gbc);
         frame.setContentPane(subpanel);
 
-        Thread work = new Thread(new Runnable() {
+        saveOK.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser chooser = new JFileChooser();
+                chooser.setFileFilter(new FileNameExtensionFilter("*.zip", "zip"));
+                chooser.setDialogTitle("Save Info into a ZIP File");
+                int returnValue = chooser.showSaveDialog(null);
+                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                    File file = chooser.getSelectedFile();
+                    targ_zip = file.getAbsolutePath();
+                    if (!targ_zip.isEmpty()) {
+                        if (!targ_zip.endsWith(".zip")) {
+                            targ_zip += ".zip";
+                        }
+                        synchronized (status) {
+                            status[0] = 5;
+                            status.notify();
+                        }
+                    }
+                }
+
+            }
+        });
+
+        cancelRun.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                synchronized (status) {
+                    status[0] = -1;
+                    status.notify();
+                }
+            }
+        });
+
+
+        work = new Thread(new Runnable() {
             @Override
             public void run() {
-                java.util.ArrayList<Integer> clq;
+                q_img.lock();
+                k_img.lock();
+                java.util.ArrayList<Integer> clq = new ArrayList<>();
                 AlignImagePairFromPoints<AffineModel2D> aip = new AlignImagePairFromPoints<>(AffineModel2D::new);
+                ImagePlus rimg = null;
 
                 try {
-                    status[0] += 1;
-                    /* find max clique (TODO: lower_bound) */
-                    System.out.println("max clique");
-                    clq = this.get_clique();
-                    status[0] += 1;
-
-                    /* find transform fit */
-                    aip.load(q_pts, k_pts, clq);
-                    Thread.sleep(250);
-                    System.out.println("fitting tform...");
-                    aip.estimate();
-                    status[0] += 1;
-
-                    if (!saveOverlay(aip)) {
-                        throw new IOException("unable to save zip");
+                    while (status[0] >= 0 && status[0] < 6) {
+                        switch (status[0]) {
+                            case 0:
+                                synchronized (status) {
+                                    if (status[0] != -1) status[0] = 1;
+                                    status.notify();
+                                }
+                                break;
+                            case 1:
+                                /* find max clique (TODO: lower_bound) */
+                                System.out.println("max clique");
+                                clq = this.get_clique();
+                                synchronized (status) {
+                                    if (status[0] != -1) status[0] = 2;
+                                    status.notify();
+                                }
+                                break;
+                            case 2:
+                                /* find transform fit */
+                                aip.load(q_pts, k_pts, clq);
+                                System.out.println("fitting tform...");
+                                aip.estimate();
+                                System.out.println("should be calcing scores");
+                                synchronized (status) {
+                                    if (status[0] != -1) status[0] = 3;
+                                    status.notify();
+                                }
+                                break;
+                            case 3:
+                                rimg = createOverlay(aip);
+                                saveOK.setEnabled(true);
+                                cancelRun.setEnabled(true);
+                                rimg.show();
+                                synchronized (status) {
+                                    if (status[0] != -1) status[0] = 4;
+                                    status.notify();
+                                }
+                                break;
+                            case 4:
+                                synchronized (status) {
+                                    while (status[0] == 4) status.wait();
+                                }
+                                break;
+                            case 5:
+                                saveOK.setEnabled(false);
+                                cancelRun.setEnabled(false);
+                                frame.setTitle("Saving...");
+                                currentWork.setText("Saving...");
+                                if (!saveOverlay(aip)) {
+                                    throw new IOException("unable to save zip");
+                                }
+                                synchronized (status) {
+                                    if (status[0] != -1) status[0] = 6;
+                                    status.notify();
+                                }
+                                break;
+                            default:
+                                System.out.println("waiting");
+                                Thread.sleep(250);
+                        }
                     }
-                    status[0] += 1;
-
-                    if (showOverlay) {
-                        ImagePlus rimg = createOverlay(aip);
-                        rimg.show();
+                    System.out.println("finished work thread");
+                    synchronized (status) {
+                        if (status[0] != -1) status[0] = 6;
+                        status.notify();
                     }
                 } catch (Exception e) {
                     System.out.println("failed: " + e.getMessage() + " " + e);
                     e.printStackTrace();
-                    status[0] = -1;
+                    synchronized (status) {
+                        status[0] = -1;
+                        status.notify();
+                    }
                 }
+                if (rimg != null) rimg.close();
+                q_img.unlock();
+                k_img.unlock();
             }
 
             ArrayList<Integer> get_clique() {
@@ -579,26 +634,30 @@ public class Align_Runner implements PlugIn {
         });
 
 
-        Thread ui = new Thread(new Runnable() {
+        ui = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    q_img.lock();
-                    k_img.lock();
-                    while (status[0] >= 0 && status[0] < works.length) {
-                        if (status[0] != works.length - 1) {
+                    int prevstat = -1;
+
+                    while (status[0] >= 0 && status[0] < 6) {
+                        bar.setValue(progressLevel[status[0]]);
+                        if (status[0] != 5) {
                             currentWork.setText(works[status[0]]);
                         }
-                        bar.setValue(progressLevel[status[0]]);
-                        Thread.sleep(275);
+                        synchronized (status) {
+                            while (status[0] == prevstat) {
+                                status.wait();
+                            }
+                        }
+                        prevstat = status[0];
                     }
                     frame.setVisible(false);
-                    q_img.unlock();
-                    k_img.unlock();
-                    System.out.println("complete");
-                } catch (Exception ignored) {
-                    q_img.unlock();
-                    k_img.unlock();
+                    status[0] = -1;
+                    System.out.println("finished ui thread");
+                } catch (Exception e) {
+                    frame.setVisible(false);
+                    e.printStackTrace();
                 }
             }
         });
