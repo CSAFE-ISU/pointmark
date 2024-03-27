@@ -3,10 +3,13 @@ import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
+import ij.gui.Roi;
+import ij.gui.ShapeRoi;
 import ij.io.FileInfo;
 import ij.io.TiffEncoder;
 import ij.plugin.PlugIn;
 import ij.process.ColorProcessor;
+import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 import mpicbg.ij.TransformMapping;
 import mpicbg.models.*;
@@ -21,6 +24,7 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.awt.image.IndexColorModel;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -263,6 +267,8 @@ public class Align_Runner implements PlugIn {
     void runWithProgress() {
         ImagePlus q_img = imgmap.get(Q_imgs.getSelectedItem());
         ImagePlus k_img = imgmap.get(K_imgs.getSelectedItem());
+        PolygonRoi q_bounds = (PolygonRoi) q_img.getProperty("bounds");
+        PolygonRoi k_bounds = (PolygonRoi) k_img.getProperty("bounds");
         Point[] q_pts = ((PointRoi) q_img.getProperty("points")).getContainedPoints();
         Point[] k_pts = ((PointRoi) k_img.getProperty("points")).getContainedPoints();
         double delta = Double.parseDouble(deltaT.getText());
@@ -345,6 +351,7 @@ public class Align_Runner implements PlugIn {
 
                 ij.ImageStack k_stack = k_img.getImageStack();
                 Point[] kp1 = aip.getMappedK_ptsAsRoi().getContainedPoints();
+                PolygonRoi mapped_k_bounds = aip.mapPolygonRoi(k_bounds, false);
                 ArrayList<Integer> kc_ind = aip.getCorrK_ind();
                 Stroke ks = new BasicStroke(12F);
                 Color kcol = Color.BLUE;
@@ -368,6 +375,20 @@ public class Align_Runner implements PlugIn {
                 /* transform images via fit */
                 ImageProcessor k1 = k_stack.getProcessor(1).createProcessor(q1.getWidth(), q1.getHeight());
                 aip.mapImage(k_stack.getProcessor(1), false, k1);
+
+                ImageProcessor k10 = k1.convertToByteProcessor().duplicate();
+                ShapeRoi common_bounds = new ShapeRoi(mapped_k_bounds);
+                common_bounds = common_bounds.and(new ShapeRoi(q_bounds));
+                k10.setColor(Color.WHITE);
+                k10.fillOutside(common_bounds);
+                k10.setColorModel(CustomColorModelFactory.getDefaultModel());
+                bi = getWritableImage(q_stack.getProcessor(1));
+                g = (Graphics2D) bi.getGraphics();
+                g.drawImage(k10.createImage(), 0, 0, null);
+                burnPoints(g, qp1, qc_ind, qs, qcol);
+                burnPoints(g, kp1, kc_ind, ks, kcol);
+                ImageProcessor ovr = rasterize(bi).getProcessor();
+
                 bi = getWritableImage(k1);
                 g = (Graphics2D) bi.getGraphics();
                 burnPoints(g, qp1, qc_ind, qs, qcol);
@@ -375,6 +396,7 @@ public class Align_Runner implements PlugIn {
                 k1 = rasterize(bi).getProcessor();
 
                 ij.ImageStack res = new ImageStack();
+                res.addSlice(ovr);
                 res.addSlice(q1);
                 res.addSlice(k1);
                 res.addSlice(q2);
@@ -658,6 +680,27 @@ class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
         return res;
     }
 
+    PolygonRoi mapPolygonRoi(PolygonRoi pts, boolean fromQToK) {
+        double[] pt = new double[2];
+        double[] z;
+        FloatPolygon src = pts.getFloatPolygon();
+        FloatPolygon res = new FloatPolygon();
+        T tform;
+        if (fromQToK) {
+            tform = tform_q2k;
+        } else {
+            tform = tform_k2q;
+        }
+        for (int j = 0; j < src.npoints; ++j) {
+            pt[0] = src.xpoints[j];
+            pt[1] = src.ypoints[j];
+            z = tform.apply(pt);
+            res.addPoint(z[0], z[1]);
+        }
+
+        return new PolygonRoi(res, Roi.POLYGON);
+    }
+
     PointRoi mapPointsAsRoi(double[][] pts, boolean fromQToK) {
         PointRoi res = new PointRoi();
         double[] z;
@@ -743,5 +786,38 @@ class AlignImagePairFromPoints<T extends mpicbg.models.AbstractModel<T>> {
         result.put("K", pointData(k_pts, kc_ind));
         /* TODO: include transformation coefficients? transformed point clouds? */
         return result;
+    }
+}
+
+class CustomColorModelFactory {
+    public static IndexColorModel getModel(int r, int g, int b, int a, int bar) {
+        // all pixel values above bar are transparent
+        // rest are filled with r,g,b,a
+        byte[] red = new byte[256];
+        byte[] green = new byte[256];
+        byte[] blue = new byte[256];
+        byte[] alpha = new byte[256];
+
+        for (int i = 0; i < 256; ++i) {
+            red[i] = (byte) r;
+            green[i] = (byte) g;
+            blue[i] = (byte) b;
+            if (i < bar) {
+                alpha[i] = (byte) a;
+            } else {
+                alpha[i] = (byte) 0;
+            }
+        }
+
+        return new IndexColorModel(8, 256, red, green, blue, alpha);
+    }
+
+    public static IndexColorModel getDefaultModel() {
+        int r = 0x9f;
+        int g = 0x14;
+        int b = 0x96;
+        int a = 151;
+        int bar = 110; // all pixel values above this are transparent
+        return getModel(r, g, b, a, bar);
     }
 }
