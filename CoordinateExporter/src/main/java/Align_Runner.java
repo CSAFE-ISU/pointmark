@@ -294,11 +294,46 @@ public class Align_Runner implements PlugIn {
         int[] progressLevel = {5, 25, 50, 75, 99};
         final int[] status = {0};
 
-        JPanel subpanel = new JPanel(new GridLayout(2, 1));
+        JFrame frame = new JFrame();
+        frame.setTitle("processing....");
+        frame.setSize(320, 240);
+
+        JPanel subpanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
         JProgressBar bar = new JProgressBar();
         JLabel currentWork = new JLabel();
-        subpanel.add(currentWork);
-        subpanel.add(bar);
+        JButton saveOK = new JButton("Save Overlay?");
+        saveOK.setEnabled(false);
+        JButton cancelRun = new JButton("Cancel");
+
+        gbc.gridx = 0;
+        gbc.ipady = 40;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        subpanel.add(currentWork, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.ipady = 20;
+        gbc.gridwidth = 2;
+        subpanel.add(bar, gbc);
+
+        gbc.gridx = 0;
+        gbc.weightx = 0.5;
+        gbc.gridy = 2;
+        gbc.ipady = 30;
+        gbc.gridwidth = 1;
+        subpanel.add(saveOK, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0.5;
+        gbc.gridy = 2;
+        gbc.ipady = 30;
+        gbc.gridwidth = 1;
+        subpanel.add(cancelRun, gbc);
+        frame.setContentPane(subpanel);
 
         Thread work = new Thread(new Runnable() {
             @Override
@@ -543,9 +578,6 @@ public class Align_Runner implements PlugIn {
             }
         });
 
-        JFrame frame = new JFrame();
-        frame.setContentPane(subpanel);
-        frame.setSize(320, 240);
 
         Thread ui = new Thread(new Runnable() {
             @Override
