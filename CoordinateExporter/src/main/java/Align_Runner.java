@@ -1,10 +1,7 @@
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.WindowManager;
-import ij.gui.PointRoi;
-import ij.gui.PolygonRoi;
-import ij.gui.Roi;
-import ij.gui.ShapeRoi;
+import ij.gui.*;
 import ij.io.FileInfo;
 import ij.io.TiffEncoder;
 import ij.plugin.PlugIn;
@@ -27,10 +24,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -58,12 +52,15 @@ public class Align_Runner implements PlugIn {
     private final JFormattedTextField lowerBoundT;
     private final JLabel Qimg_points;
     private final JLabel Kimg_points;
+    private final JCheckBox showScoreT;
+    private JComboBox<String> scoreNamesT;
+    private HashMap<String, String> scoreFiles;
     private String targ_zip;
     private boolean uiLoaded;
 
 
     public Align_Runner() {
-        this.panel = new JPanel(new GridLayout(6, 4));
+        this.panel = new JPanel(new GridLayout(7, 4));
         this.dummy = new JTextArea();
         this.imgmap = new HashMap<>();
         this.Q_imgs = new JComboBox<>();
@@ -77,6 +74,8 @@ public class Align_Runner implements PlugIn {
         this.deltaT = new JFormattedTextField(NumberFormat.getInstance());
         this.epsilonT = new JFormattedTextField(NumberFormat.getInstance());
         this.lowerBoundT = new JFormattedTextField(NumberFormat.getInstance());
+        this.showScoreT = new JCheckBox("Similarity Score?");
+        this.scoreNamesT = new JComboBox<>();
         this.uiLoaded = false;
         this.targ_zip = "";
         loadUI();
@@ -167,8 +166,14 @@ public class Align_Runner implements PlugIn {
 
         panel.add(new JLabel("Must Have At Least"));
         panel.add(lowerBoundT);
-        panel.add(new JLabel("points"));
-        panel.add(new JLabel("in common"));
+        panel.add(new JLabel("points in common"));
+        panel.add(new JLabel(""));
+
+        panel.add(showScoreT);
+        panel.add(scoreNamesT);
+        scoreNamesT.addItem("clique_fraction");
+        panel.add(new JLabel(""));
+        panel.add(new JLabel(""));
 
         loadReactions();
         uiLoaded = true;
@@ -180,6 +185,7 @@ public class Align_Runner implements PlugIn {
         deltaT.setText("0.1");
         epsilonT.setText("0.03");
         lowerBoundT.setText("10");
+        showScoreT.setSelected(true);
         Q_imgs.setSelectedIndex(0);
         K_imgs.setSelectedIndex(1);
 
@@ -208,21 +214,12 @@ public class Align_Runner implements PlugIn {
             }
         });
 
-        /* overlaySaveButton.addActionListener(new ActionListener() {
+        showScoreT.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JFileChooser chooser = new JFileChooser();
-                chooser.setFileFilter(new FileNameExtensionFilter("ZIP file to save data in", "zip"));
-                int returnValue = chooser.showSaveDialog(null);
-                if (returnValue == JFileChooser.APPROVE_OPTION) {
-                    File file = chooser.getSelectedFile();
-                    overlayPath.setText(file.getAbsolutePath());
-                } else {
-                    JOptionPane.showMessageDialog(null, "Did not select a File!");
-                    overlayPath.setText("");
-                }
+                scoreNamesT.setEnabled(showScoreT.isSelected());
             }
-        }); */
+        });
 
         this.getNumPoints(imgmap.get(K_imgs.getSelectedItem()), Kimg_points);
         this.getNumPoints(imgmap.get(Q_imgs.getSelectedItem()), Qimg_points);
@@ -252,6 +249,8 @@ public class Align_Runner implements PlugIn {
         double min_ratio = Double.parseDouble(minRatioT.getText());
         double max_ratio = Double.parseDouble(maxRatioT.getText());
         int lower_bound = Integer.parseInt(lowerBoundT.getText());
+        boolean show_score = showScoreT.isSelected();
+        String score_name = (String) scoreNamesT.getSelectedItem();
 
         String[] works = {"Starting...", "Checking scales and aligning...",
                 "Calculating similarity scores...", "Creating Overlay...", "Save alignment?", "Saving ZIP File"};
@@ -345,6 +344,7 @@ public class Align_Runner implements PlugIn {
                 java.util.ArrayList<Integer> clq = new ArrayList<>();
                 AlignImagePairFromPoints<AffineModel2D> aip = new AlignImagePairFromPoints<>(AffineModel2D::new);
                 ImagePlus rimg = null;
+                ImagePlus histPlot = null;
 
                 try {
                     while (status[0] >= 0 && status[0] < 6) {
@@ -370,6 +370,9 @@ public class Align_Runner implements PlugIn {
                                 System.out.println("fitting tform...");
                                 aip.estimate();
                                 System.out.println("should be calcing scores");
+                                histPlot = calculateScore(aip, score_name);
+                                histPlot.show();
+                                histPlot.getCanvas().setSize(640, 480);
                                 synchronized (status) {
                                     if (status[0] != -1) status[0] = 3;
                                     status.notify();
@@ -422,9 +425,11 @@ public class Align_Runner implements PlugIn {
                     }
                 }
                 if (rimg != null) rimg.close();
+                if (histPlot != null) histPlot.close();
                 q_img.unlock();
                 k_img.unlock();
             }
+
 
             ArrayList<Integer> get_clique() {
                 Mapper3 x = new Mapper3();
@@ -437,19 +442,28 @@ public class Align_Runner implements PlugIn {
                 return g.get_max_clique();
             }
 
+            ImagePlus calculateScore(AlignImagePairFromPoints<?> aip, String scoreName) throws FileNotFoundException {
+                Point[] qp1 = q_pts;
+                ArrayList<Integer> qc_ind = aip.getCorrQ_ind();
+                /* TODO: score is currently set to clique_fraction always,
+                    have a generalized approach for different scores */
+                ScoreViewer s = ScoreViewer.fromJSONInFolder(scoreName);
+                return s.showScoreWithReference((1.0 * qc_ind.size()) / qp1.length);
+            }
+
             ImagePlus createOverlay(AlignImagePairFromPoints<?> aip) {
                 ij.ImageStack q_stack = q_img.getImageStack();
                 Point[] qp1 = q_pts;
                 ArrayList<Integer> qc_ind = aip.getCorrQ_ind();
                 Stroke qs = new BasicStroke(18F);
-                Color qcol = Color.RED;
+                Color qcol = new Color(255, 0, 0, 157);
 
                 ij.ImageStack k_stack = k_img.getImageStack();
                 Point[] kp1 = aip.getMappedK_ptsAsRoi().getContainedPoints();
                 PolygonRoi mapped_k_bounds = aip.mapPolygonRoi(k_bounds, false);
                 ArrayList<Integer> kc_ind = aip.getCorrK_ind();
                 Stroke ks = new BasicStroke(12F);
-                Color kcol = Color.BLUE;
+                Color kcol = new Color(0, 0, 255, 157);
 
                 /* render necessary things on overlay */
                 BufferedImage bi;
@@ -503,14 +517,14 @@ public class Align_Runner implements PlugIn {
                 Point[] qp0 = q_pts;
                 ArrayList<Integer> qc_ind = aip.getCorrQ_ind();
                 Stroke qs = new BasicStroke(18F);
-                Color qcol = Color.RED;
+                Color qcol = new Color(255, 0, 0, 157);
 
                 ij.ImageStack k_stack = k_img.getImageStack();
                 Point[] kp0 = k_pts;
                 Point[] kp1 = aip.getMappedK_ptsAsRoi().getContainedPoints();
                 ArrayList<Integer> kc_ind = aip.getCorrK_ind();
                 Stroke ks = new BasicStroke(12F);
-                Color kcol = Color.BLUE;
+                Color kcol = new Color(0, 0, 255, 157);
 
                 System.out.println("Saving to " + targ_zip);
                 DataOutputStream out;
