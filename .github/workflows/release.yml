@@ -33,4 +33,4 @@ jobs:
         with:
           fail_on_unmatched_files: true
           prerelease: true
-          files: pointmark-01.0.jar
+          files: pointmark-0.1.0.jar
