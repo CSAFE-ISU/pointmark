@@ -1,33 +1,25 @@
-Pointmark
-=====================================
+# What is PointMark?
 
-This is a a plugin for importing sets of "valid" and "invalid" points for an image in Fiji in order to edit and export them.
+PointMark is a tool developed by CSAFE, to manually mark interest and false positive
+points on Shoeprint images, and export them in JSON format as data for evaluation.
 
-How To Set Up
-------
-1. Make sure Fiji (ImageJ2) is installed
-2. Add jar to Fiji.app/plugins directory
-3. Open an image within ImageJ
-4. Navigate to Plugins menu, if the second step was followed correctly then "Coordinate Controller" should appear upon scrolling down
-5. Select Coordinate Controller to boot up the plugin
+PointMark is a plugin for [ImageJ2][ij2] aka
+[FIJI][fiji]; the jar is accessible via Fiji's Plugins menu.
 
-User Manual
-------
-1. Import:
-    +   Click on the Import button in Coordinate Controller's log menu and select a JSON file to import onto the open image.
-    +   Correct format for JSON has "valid" and "invalid" headers storing arrays of size 2, the first value being the x-coordinate and the second the y-coordinate. Can be doubles (decimals) or integers.
-2. Export:
-    +   Click on the Export button in Coordinate Controller's log menu and select a JSON file to export points into.
-    +   WARNING: Previous contents of the JSON will be overwritten upon an export.
-3. Adding a Point:
-    +   Select the Multi-point Tool in ImageJ
-    +   Choose either the valid or invalid point set
-    +   Click the image on where you would like to mark a point
-4. Deleting a Point:
-    +   Make sure the set of the point you would like to delete is selected (it will be a cyan/light blue color)
-    +   Hold Alt + click on the point to delete
-5. Swapping a Point:
-    +   Make sure the set of the point you would like to swap is selected (it will be a cyan/light blue color)
-    +   Hold Q + click on the point to swap it to the other point set (it should change color)
+## What is the purpose of this repo?
 
-NOTE: The ability to move points is disabled for this plugin in order to reduce errors.
+The purpose of this repo is to provide a streamlined method of marking and saving
+interest points on a ShoePrint image to be evaluated.
+
+This repo contains:
+
+- scripts to download ImageJ (for different OS/arch combos)
+- scripts to download the necessary plugins used in ShoeComp
+- configuration files for ImageJ plugins
+
+Our Github Actions runner provides the PointMark plugin as a
+Java JAR, which can be added to Fiji's Plugins Folder for use.
+
+[ij2]: https://imagej.net/software/imagej2/
+[fiji]: https://imagej.net/software/fiji/
+[actionbar]: https://imagej.net/plugins/action-bar
