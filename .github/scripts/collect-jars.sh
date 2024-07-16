@@ -9,7 +9,10 @@ mkdir -p plugins
 cd plugins
 
 echo "copying pointmark jar..."
-cp ../../CoordinateExporter/target/CoordinateExporter-0.1.0-SNAPSHOT.jar ./pointmark-1.0.jar
+cd ../../CoordinateExporter/src
+pwd
+ls -d */
+cp ../../pointmark/CoordinateExporter/target/CoordinateExporter-0.1.0-SNAPSHOT.jar ./pointmark-1.0.jar
 
 # https://figshare.com/articles/dataset/Custom_toolbars_and_mini_applications_with_Action_Bar/3397603
 echo "downloading action_bar.jar..."
