@@ -19,6 +19,8 @@ jobs:
       - name: checkout repo
         id: checkout_repo
         uses: actions/checkout@v4
+      - name: Fetch all tags
+        run: git fetch --tags
       - name: setup JDK
         uses: actions/setup-java@v4
         id: jdk_setup
