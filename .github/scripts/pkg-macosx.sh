@@ -11,4 +11,8 @@ zip --delete "$FIJI_FILENAME" 'Fiji.app/scripts/*'
 zip --delete "$FIJI_FILENAME" 'Fiji.app/images/about/*'
 
 zip -r "$FIJI_FILENAME" Fiji.app
-unzip -vl "$FIJI_FILENAME" | grep -i "pointmark"
+if unzip -vl "$FIJI_FILENAME" | grep -i "pointmark"; then
+  echo "Found 'pointmark' in the zip file."
+else
+  echo "'pointmark' not found in the zip file."
+fi
