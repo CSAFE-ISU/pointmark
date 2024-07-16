@@ -4,9 +4,6 @@ set -eu
 mkdir -p Fiji.app
 cd Fiji.app
 
-# copy macros
-cp -r ../macros ./
-
 # copy plugins
 mkdir -p plugins
 cd plugins
