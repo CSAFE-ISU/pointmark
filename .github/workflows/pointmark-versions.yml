@@ -24,7 +24,7 @@ jobs:
       - name: build JAR
         run: bash ./.github/scripts/build-jar.sh
       - name: rename JAR
-        run: cp CoordinateExporter/target/CoordinateExporter-0.1.0-SNAPSHOT.jar pointmark-1.0.jar
+        run: cp target/CoordinateExporter-0.1.0-SNAPSHOT.jar pointmark-1.0.jar
       - name: upload release assets
         id: upload_assets
         uses: softprops/action-gh-release@v2
