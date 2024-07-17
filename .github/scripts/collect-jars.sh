@@ -12,6 +12,8 @@ mkdir -p plugins
 cd plugins
 
 echo "copying pointmark jar..."
+echo "VERSION_NUMBER received: ${VERSION_NUMBER}"
+echo "VERSION_NUMBER=${VERSION_NUMBER}" >> $GITHUB_ENV
 cd ../../
 cp pointmark-1.0.${VERSION_NUMBER}.jar ./pointmark-1.0.${VERSION_NUMBER}.jar
 
