@@ -92,6 +92,8 @@ jobs:
 #          run: bash ./.github/scripts/build-jar.sh
 
         - name: copy plugins and macros
+          env:
+            VERSION_NUMBER: ${{ env.VERSION_NUMBER }}
           run: bash ./.github/scripts/collect-jars.sh
 
         - name: package for ${{ matrix.fiji_target }}
