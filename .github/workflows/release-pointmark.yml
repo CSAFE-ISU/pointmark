@@ -28,7 +28,7 @@ jobs:
                 java-version: '11'
 
             - name: Build Project
-              working-directory: CoordinateExporter
+              working-directory: pointmark
               run: |
                 pwd
                 ls -la
@@ -36,7 +36,7 @@ jobs:
                 
 
             - name: Package JAR
-              working-directory: CoordinateExporter
+              working-directory: pointmark
               run: |
                 pwd
                 ls -la
@@ -64,7 +64,7 @@ jobs:
                 VERSION_NUMBER: ${{ env.VERSION_NUMBER }}
               with:
                 upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-                asset_path: CoordinateExporter/target/CoordinateExporter-0.1.0-SNAPSHOT.jar
+                asset_path: /target/CoordinateExporter-0.1.0-SNAPSHOT.jar
                 asset_name: Coordinate_Exporter-0.1.0.jar
                 asset_content_type: application/java-archive
 
