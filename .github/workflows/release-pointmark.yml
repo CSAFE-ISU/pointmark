@@ -5,7 +5,7 @@ on:
         branches:
             - main
         tags:
-        - 'v1*' # Push events to matching v*, i.e. v1.0, v20.15.10
+        - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
   # name: Create Release
 
@@ -32,7 +32,6 @@ jobs:
                 pwd
                 ls -la
                 mvn clean
-                
 
             - name: Package JAR
               run: |
@@ -51,12 +50,15 @@ jobs:
                 release_name: v1.0.${{ github.run_number }}
                 body: Packaging for PointMark
 
+            - name: Set VERSION_NUMBER
+              id: set_version_number
+              run: echo "VERSION_NUMBER=${{ github.run_number }}" >> $GITHUB_ENV
+
             - name: Upload Release Asset
               id: upload-release-asset
               uses: actions/upload-release-asset@v1
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                VERSION_NUMBER: ${{ env.VERSION_NUMBER }}
               with:
                 upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
                 asset_path: target/CoordinateExporter-0.1.0-SNAPSHOT.jar
