@@ -65,6 +65,10 @@ jobs:
                 asset_name: pointmark-1.0.${{ env.VERSION_NUMBER }}.jar
                 asset_content_type: application/java-archive
 
+            - name: Set Output VERSION_NUMBER
+              id: set_output_version_number
+              run: echo "::set-output name=version_number::${{ github.run_number }}"
+
     build_jars:
       name: package pointmark into FIJI
       runs-on: ubuntu-latest
@@ -96,7 +100,7 @@ jobs:
 
         - name: copy plugins and macros
           env:
-            VERSION_NUMBER: ${{ env.VERSION_NUMBER }}
+            VERSION_NUMBER: ${{ needs.release_pointmark.outputs.version_number }}
           run: bash ./.github/scripts/collect-jars.sh
 
         - name: package for ${{ matrix.fiji_target }}
