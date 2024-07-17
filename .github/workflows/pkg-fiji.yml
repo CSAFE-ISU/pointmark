@@ -1,4 +1,5 @@
 name: package pointmark into FIJI
+
 on:
   workflow_dispatch:
   release:
@@ -19,35 +20,36 @@ jobs:
       - name: checkout repo
         id: checkout_repo
         uses: actions/checkout@v4
+
       - name: Fetch all tags
         run: git fetch --tags
+
       - name: List all tags
         run: git tag
+
       - name: setup JDK
         uses: actions/setup-java@v4
         id: jdk_setup
         with:
           distribution: 'adopt'
           java-version: '11'
+
       - name: build JAR
         run: bash ./.github/scripts/build-jar.sh
+
       - name: copy plugins and macros
         run: bash ./.github/scripts/collect-jars.sh
+
       - name: package for ${{ matrix.fiji_target }}
         run: bash ./.github/scripts/pkg-${{ matrix.fiji_target }}.sh
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Create and push tag
+        run: |
+          TAG_NAME="v${GITHUB_RUN_NUMBER}"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.run_number }}
-          release_name: |
-            Release #${{ github.run_number }}
-          body: |
-            Changes in this Release:
-            - None for now, testing workflow
 
       - name: upload release ZIP
         id: upload_zip
@@ -56,3 +58,7 @@ jobs:
           fail_on_unmatched_files: true
           prerelease: true
           files: fiji-${{ matrix.fiji_target }}.zip
+          tag_name: "v${{ github.run_number }}"
+          release_name: Release v${{ github.run_number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
