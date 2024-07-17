@@ -48,11 +48,8 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                 tag_name: v1.0.${{ github.run_number }}
-                release_name: |
-                  v1.0.${{ github.run_number }}
-                body: |
-                    Changes in this Release:
-                    - None for now, testing workflow
+                release_name: v1.0.${{ github.run_number }}
+                body: Packaging for PointMark
 
             - name: Upload Release Asset
               id: upload-release-asset
@@ -63,51 +60,51 @@ jobs:
               with:
                 upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
                 asset_path: target/CoordinateExporter-0.1.0-SNAPSHOT.jar
-                asset_name: pointmark-1.0.0.jar
+                asset_name: pointmark-1.0.${{ env.VERSION_NUMBER }}.jar
                 asset_content_type: application/java-archive
 
-#  build_jars:
-#    name: package pointmark into FIJI
-#    runs-on: ubuntu-latest
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        fiji_target: [ linux64, win64, macosx ]
-#    steps:
-#      - name: checkout repo
-#        id: checkout_repo
-#        uses: actions/checkout@v4
-#
-#      - name: Fetch all tags
-#        run: git fetch --tags
-#
-#      - name: List all tags
-#        run: git tag
-#
-#      - name: setup JDK
-#        uses: actions/setup-java@v4
-#        id: jdk_setup
-#        with:
-#          distribution: 'adopt'
-#          java-version: '11'
-#
-#      - name: build JAR
-#        run: bash ./.github/scripts/build-jar.sh
-#
-#      - name: copy plugins and macros
-#        run: bash ./.github/scripts/collect-jars.sh
-#
-#      - name: package for ${{ matrix.fiji_target }}
-#        run: bash ./.github/scripts/pkg-${{ matrix.fiji_target }}.sh
-#
-#      - name: upload release ZIP
-#        id: upload_zip
-#        uses: softprops/action-gh-release@v2
-#        with:
-#          fail_on_unmatched_files: true
-#          prerelease: true
-#          files: fiji-${{ matrix.fiji_target }}.zip
-#          tag_name: "v${{ github.run_number }}"
-#          release_name: Release v${{ github.run_number }}
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    build_jars:
+      name: package pointmark into FIJI
+      runs-on: ubuntu-latest
+      strategy:
+        fail-fast: false
+        matrix:
+          fiji_target: [ linux64, win64, macosx ]
+      steps:
+        - name: checkout repo
+          id: checkout_repo
+          uses: actions/checkout@v4
+
+        - name: Fetch all tags
+          run: git fetch --tags
+
+        - name: List all tags
+          run: git tag
+
+        - name: setup JDK
+          uses: actions/setup-java@v4
+          id: jdk_setup
+          with:
+            distribution: 'adopt'
+            java-version: '11'
+
+#        - name: build JAR
+#          run: bash ./.github/scripts/build-jar.sh
+
+        - name: copy plugins and macros
+          run: bash ./.github/scripts/collect-jars.sh
+
+        - name: package for ${{ matrix.fiji_target }}
+          run: bash ./.github/scripts/pkg-${{ matrix.fiji_target }}.sh
+
+        - name: upload release ZIP
+          id: upload_zip
+          uses: softprops/action-gh-release@v2
+          with:
+            fail_on_unmatched_files: true
+            prerelease: true
+            files: fiji-${{ matrix.fiji_target }}.zip
+            tag_name: v1.0.${{ github.run_number }}
+            release_name: v1.0.${{ github.run_number }}
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -12,7 +12,7 @@ echo "copying pointmark jar..."
 cd ../../
 pwd
 ls -d */
-cp target/CoordinateExporter-0.1.0-SNAPSHOT.jar ./pointmark-1.0.jar
+cp pointmark-1.0.${{ env.VERSION_NUMBER }}.jar ./pointmark-1.0.${{ env.VERSION_NUMBER }}.jar
 
 # https://figshare.com/articles/dataset/Custom_toolbars_and_mini_applications_with_Action_Bar/3397603
 echo "downloading action_bar.jar..."
