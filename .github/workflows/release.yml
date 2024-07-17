@@ -5,7 +5,7 @@ on:
     types: [created]
   create:
     tags:
-      - v.*
+      - v*
 
 jobs:
   build_jar:
