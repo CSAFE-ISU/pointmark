@@ -6,58 +6,63 @@ on:
     types: [created]
 
 jobs:
-  build_jar:
-    name: build pointmark JAR
+  release_pointmark:
+    name: Release Pointmark
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        id: checkout_repo
-        uses: actions/checkout@v4
 
-      - name: Setup JDK
-        uses: actions/setup-java@v4
-        id: jdk_setup
-        with:
-          distribution: 'adopt'
-          java-version: '11'
+        - name: Checkout Code
+          uses: actions/checkout@v2
+          id: release_pointmark
+          with:
+              github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build JAR
-        run: bash ./.github/scripts/build-jar.sh
+        - name: JDK Setup
+          uses: actions/setup-java@v2
+          with:
+            distribution: 'adopt'
+            java-version: '11'
 
-      - name: Rename JAR
-        run: |
-          cd target
-          cp CoordinateExporter-0.1.0-SNAPSHOT.jar pointmark-1.0.0.jar
+        - name: Build Project
+          working-directory: CoordinateExporter
+          run: |
+            pwd
+            ls -la
+            mvn clean
+            
 
-      - name: Check if tag exists
-        id: check_tag
-        run: |
-          TAG_NAME="v${GITHUB_RUN_NUMBER}"
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "TAG_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "TAG_EXISTS=false" >> $GITHUB_ENV
-          fi
+        - name: Package JAR
+          working-directory: CoordinateExporter
+          run: |
+            pwd
+            ls -la
+            mvn package
+            ls -la target
 
-      - name: Create and push tag if it doesn't exist
-        if: env.TAG_EXISTS == 'false'
-        run: |
-          TAG_NAME="v${GITHUB_RUN_NUMBER}"
-          git tag $TAG_NAME
-          git push origin $TAG_NAME
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        - name: Create Release
+          id: create_release
+          uses: actions/create-release@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            tag_name: ${{ github.run_number }}
+            release_name: |
+              Release #${{ github.run_number }}
+            body: |
+                Changes in this Release:
+                - None for now, testing workflow
 
-      - name: Upload release assets
-        id: upload_assets
-        uses: softprops/action-gh-release@v2
-        with:
-          files: target/pointmark-1.0.0.jar
-          tag_name: "v1.0.0"
-          release_name: Release v1.0.0
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        - name: Upload Release Asset
+          id: upload-release-asset
+          uses: actions/upload-release-asset@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            VERSION_NUMBER: ${{ env.VERSION_NUMBER }}
+          with:
+            upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+            asset_path: CoordinateExporter/target/CoordinateExporter-0.1.0-SNAPSHOT.jar
+            asset_name: Coordinate_Exporter-0.1.0.jar
+            asset_content_type: application/java-archive
 
 #  build_jars:
 #    name: package pointmark into FIJI
