@@ -48,34 +48,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Release if tag doesn't exist
-        if: env.TAG_EXISTS == 'false'
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "v${GITHUB_RUN_NUMBER}"
-          release_name: Release v${GITHUB_RUN_NUMBER}
-          body: |
-            Changes in this release:
-            - None for now, testing workflow
-          prerelease: true
-
       - name: Upload release assets
-        uses: actions/upload-release-asset@v1
+        id: upload_assets
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/pointmark-1.0.0.jar
-          asset_name: pointmark-1.0.0.jar
-          asset_content_type: application/zip
+          files: target/pointmark-1.0.0.jar
+          tag_name: "v1.0.0"
+          release_name: Release v1.0.0
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Trigger next workflow
-        run: |
-          curl -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/actions/workflows/package-fiji.yml/dispatches \
-            -d '{"ref":"main"}'

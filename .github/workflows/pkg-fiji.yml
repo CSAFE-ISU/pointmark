@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   release:
     types: [created]
+  create:
+    tags:
+      - 'v*'
 
 jobs:
   build_jar:
@@ -14,7 +17,7 @@ jobs:
       matrix:
         fiji_target: [linux64, win64, macosx]
     steps:
-      - name: Checkout repo
+      - name: checkout repo
         id: checkout_repo
         uses: actions/checkout@v4
 
@@ -24,20 +27,20 @@ jobs:
       - name: List all tags
         run: git tag
 
-      - name: Setup JDK
+      - name: setup JDK
         uses: actions/setup-java@v4
         id: jdk_setup
         with:
           distribution: 'adopt'
           java-version: '11'
 
-      - name: Build JAR
+      - name: build JAR
         run: bash ./.github/scripts/build-jar.sh
 
-      - name: Copy plugins and macros
+      - name: copy plugins and macros
         run: bash ./.github/scripts/collect-jars.sh
 
-      - name: Package for ${{ matrix.fiji_target }}
+      - name: package for ${{ matrix.fiji_target }}
         run: bash ./.github/scripts/pkg-${{ matrix.fiji_target }}.sh
 
       - name: Check if tag exists
@@ -59,26 +62,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Release if tag doesn't exist
-        if: env.TAG_EXISTS == 'false'
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: upload release ZIP
+        id: upload_zip
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v${GITHUB_RUN_NUMBER}"
-          release_name: Release v${GITHUB_RUN_NUMBER}
-          body: |
-            Changes in this release:
-            - None for now, testing workflow
+          fail_on_unmatched_files: true
           prerelease: true
-
-      - name: Upload release ZIP
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: fiji-${{ matrix.fiji_target }}.zip
-          asset_name: fiji-${{ matrix.fiji_target }}.zip
-          asset_content_type: application/zip
+          files: fiji-${{ matrix.fiji_target }}.zip
+          tag_name: "v${{ github.run_number }}"
+          release_name: Release v${{ github.run_number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

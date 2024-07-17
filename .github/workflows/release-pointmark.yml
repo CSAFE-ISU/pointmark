@@ -1,0 +1,68 @@
+name: pointmark JAR release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [created]
+
+jobs:
+  find_or_create_tag:
+    name: Find or create tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.create_or_find_tag.outputs.tag_name }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: git fetch --tags
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          TAG_NAME="v${GITHUB_RUN_NUMBER}"
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "::set-output name=tag_name::${TAG_NAME}"
+          else
+            echo "::set-output name=tag_name::"
+          fi
+
+      - name: Create and push tag if it doesn't exist
+        if: steps.check_tag.outputs.tag_name == ''
+        run: |
+          TAG_NAME="v${GITHUB_RUN_NUMBER}"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+
+  build_jar:
+    needs: find_or_create_tag
+    name: Build pointmark JAR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+
+      - name: Build JAR
+        run: bash ./.github/scripts/build-jar.sh
+
+      - name: Rename JAR
+        run: |
+          cd target
+          cp CoordinateExporter-0.1.0-SNAPSHOT.jar pointmark-1.0.0.jar
+
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ secrets.UPLOAD_URL }}
+          asset_path: target/pointmark-1.0.0.jar
+          asset_name: pointmark-1.0.0.jar
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
