@@ -5,7 +5,7 @@ on:
     types: [created]
   create:
     tags:
-      - v.*
+      - 'v*'
 
 jobs:
   build_jar:
@@ -14,23 +14,44 @@ jobs:
     steps:
       - name: checkout repo
         id: checkout_repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Fetch all tags
         run: git fetch --tags
       - name: setup JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v2
         id: jdk_setup
         with:
           distribution: 'adopt'
           java-version: '11'
       - name: build JAR
-        run: bash ./.github/scripts/build-jar.sh
+        run: |
+          mvn clean
+          bash ./.github/scripts/build-jar.sh
       - name: rename JAR
         run: cp target/CoordinateExporter-0.1.0-SNAPSHOT.jar pointmark-0.1.0.jar
-      - name: upload release assets
-        id: upload_assets
-        uses: softprops/action-gh-release@v2
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          fail_on_unmatched_files: true
-          prerelease: true
-          files: pointmark-0.1.0.jar
+          tag_name: ${{ github.run_number }}
+          release_name: |
+            Release #${{ github.run_number }}
+          body: |
+            Changes in this Release:
+            - None for now, testing workflow
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION_NUMBER: ${{ env.VERSION_NUMBER }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: /target/CoordinateExporter-0.1.0-SNAPSHOT.jar
+          asset_name: pointmark-0.1.0.jar
+          asset_content_type: application/java-archive
