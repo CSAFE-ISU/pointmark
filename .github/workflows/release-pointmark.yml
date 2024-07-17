@@ -1,4 +1,4 @@
-name: pointmark JAR release
+name: pointmark JAR release and packaging
 
 on:
   workflow_dispatch:
@@ -6,45 +6,17 @@ on:
     types: [created]
 
 jobs:
-  find_or_create_tag:
-    name: Find or create tag
-    runs-on: ubuntu-latest
-    outputs:
-      tag_name: ${{ steps.create_or_find_tag.outputs.tag_name }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Git
-        run: git fetch --tags
-
-      - name: Check if tag exists
-        id: check_tag
-        run: |
-          TAG_NAME="v${GITHUB_RUN_NUMBER}"
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "::set-output name=tag_name::${TAG_NAME}"
-          else
-            echo "::set-output name=tag_name::"
-          fi
-
-      - name: Create and push tag if it doesn't exist
-        if: steps.check_tag.outputs.tag_name == ''
-        run: |
-          TAG_NAME="v${GITHUB_RUN_NUMBER}"
-          git tag $TAG_NAME
-          git push origin $TAG_NAME
-
   build_jar:
-    needs: find_or_create_tag
-    name: Build pointmark JAR
+    name: build pointmark JAR
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
+        id: checkout_repo
         uses: actions/checkout@v4
 
       - name: Setup JDK
         uses: actions/setup-java@v4
+        id: jdk_setup
         with:
           distribution: 'adopt'
           java-version: '11'
@@ -57,12 +29,78 @@ jobs:
           cd target
           cp CoordinateExporter-0.1.0-SNAPSHOT.jar pointmark-1.0.0.jar
 
-      - name: Upload release assets
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ secrets.UPLOAD_URL }}
-          asset_path: target/pointmark-1.0.0.jar
-          asset_name: pointmark-1.0.0.jar
-          asset_content_type: application/zip
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          TAG_NAME="v${GITHUB_RUN_NUMBER}"
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "TAG_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create and push tag if it doesn't exist
+        if: env.TAG_EXISTS == 'false'
+        run: |
+          TAG_NAME="v${GITHUB_RUN_NUMBER}"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload release assets
+        id: upload_assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/pointmark-1.0.0.jar
+          tag_name: "v1.0.0"
+          release_name: Release v1.0.0
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+#  build_jars:
+#    name: package pointmark into FIJI
+#    runs-on: ubuntu-latest
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        fiji_target: [ linux64, win64, macosx ]
+#    steps:
+#      - name: checkout repo
+#        id: checkout_repo
+#        uses: actions/checkout@v4
+#
+#      - name: Fetch all tags
+#        run: git fetch --tags
+#
+#      - name: List all tags
+#        run: git tag
+#
+#      - name: setup JDK
+#        uses: actions/setup-java@v4
+#        id: jdk_setup
+#        with:
+#          distribution: 'adopt'
+#          java-version: '11'
+#
+#      - name: build JAR
+#        run: bash ./.github/scripts/build-jar.sh
+#
+#      - name: copy plugins and macros
+#        run: bash ./.github/scripts/collect-jars.sh
+#
+#      - name: package for ${{ matrix.fiji_target }}
+#        run: bash ./.github/scripts/pkg-${{ matrix.fiji_target }}.sh
+#
+#      - name: upload release ZIP
+#        id: upload_zip
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          fail_on_unmatched_files: true
+#          prerelease: true
+#          files: fiji-${{ matrix.fiji_target }}.zip
+#          tag_name: "v${{ github.run_number }}"
+#          release_name: Release v${{ github.run_number }}
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
