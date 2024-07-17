@@ -21,36 +21,38 @@ jobs:
         uses: actions/checkout@v4
       - name: Fetch all tags
         run: git fetch --tags
-      - name: setup JDK
-        uses: actions/setup-java@v4
-        id: jdk_setup
-        with:
-          distribution: 'adopt'
-          java-version: '11'
-      - name: build JAR
-        run: bash ./.github/scripts/build-jar.sh
-      - name: copy plugins and macros
-        run: bash ./.github/scripts/collect-jars.sh
-      - name: package for ${{ matrix.fiji_target }}
-        run: bash ./.github/scripts/pkg-${{ matrix.fiji_target }}.sh
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.run_number }}
-          release_name: |
-            Release #${{ github.run_number }}
-          body: |
-            Changes in this Release:
-            - None for now, testing workflow
-
-      - name: upload release ZIP
-        id: upload_zip
-        uses: softprops/action-gh-release@v2
-        with:
-          fail_on_unmatched_files: true
-          prerelease: true
-          files: fiji-${{ matrix.fiji_target }}.zip
+      - name: List all tags
+        run: git tag
+#      - name: setup JDK
+#        uses: actions/setup-java@v4
+#        id: jdk_setup
+#        with:
+#          distribution: 'adopt'
+#          java-version: '11'
+#      - name: build JAR
+#        run: bash ./.github/scripts/build-jar.sh
+#      - name: copy plugins and macros
+#        run: bash ./.github/scripts/collect-jars.sh
+#      - name: package for ${{ matrix.fiji_target }}
+#        run: bash ./.github/scripts/pkg-${{ matrix.fiji_target }}.sh
+#
+#      - name: Create Release
+#        id: create_release
+#        uses: actions/create-release@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          tag_name: ${{ github.run_number }}
+#          release_name: |
+#            Release #${{ github.run_number }}
+#          body: |
+#            Changes in this Release:
+#            - None for now, testing workflow
+#
+#      - name: upload release ZIP
+#        id: upload_zip
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          fail_on_unmatched_files: true
+#          prerelease: true
+#          files: fiji-${{ matrix.fiji_target }}.zip
