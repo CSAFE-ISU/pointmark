@@ -28,7 +28,6 @@ jobs:
                 java-version: '11'
 
             - name: Build Project
-              working-directory: pointmark
               run: |
                 pwd
                 ls -la
@@ -36,7 +35,6 @@ jobs:
                 
 
             - name: Package JAR
-              working-directory: pointmark
               run: |
                 pwd
                 ls -la
