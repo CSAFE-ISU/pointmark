@@ -40,6 +40,12 @@ jobs:
                 mvn package
                 ls -la target
 
+            - name: Upload JAR Artifact
+              uses: actions/upload-artifact@v2
+              with:
+                name: pointmark-1.0.${{ env.VERSION_NUMBER }}.jar
+                path: target/CoordinateExporter-0.1.0-SNAPSHOT.jar
+
             - name: Create Release
               id: create_release
               uses: actions/create-release@v1
@@ -52,7 +58,10 @@ jobs:
 
             - name: Set VERSION_NUMBER
               id: set_version_number
-              run: echo "VERSION_NUMBER=${{ github.run_number }}" >> $GITHUB_ENV
+              run: |
+                echo "VERSION_NUMBER=${{ github.run_number }}" >> $GITHUB_ENV
+                echo "::set-output name=version_number::${{ github.run_number }}"
+              shell: bash
 
             - name: Upload Release Asset
               id: upload-release-asset
@@ -64,10 +73,6 @@ jobs:
                 asset_path: target/CoordinateExporter-0.1.0-SNAPSHOT.jar
                 asset_name: pointmark-1.0.${{ env.VERSION_NUMBER }}.jar
                 asset_content_type: application/java-archive
-
-            - name: Set Output VERSION_NUMBER
-              id: set_output_version_number
-              run: echo "::set-output name=version_number::${{ github.run_number }}"
 
     build_jars:
       name: package pointmark into FIJI
@@ -98,9 +103,14 @@ jobs:
 #        - name: build JAR
 #          run: bash ./.github/scripts/build-jar.sh
 
+        - name: Download JAR Artifact
+          uses: actions/download-artifact@v2
+          with:
+            name: pointmark-1.0.${{ env.VERSION_NUMBER }}.jar
+            path: target/
+
         - name: copy plugins and macros
           run: bash ./.github/scripts/collect-jars.sh ${{ needs.release_pointmark.outputs.version_number }}
-
 
         - name: package for ${{ matrix.fiji_target }}
           run: bash ./.github/scripts/pkg-${{ matrix.fiji_target }}.sh
