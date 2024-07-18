@@ -65,10 +65,6 @@ jobs:
                 asset_name: pointmark-1.0.${{ env.VERSION_NUMBER }}.jar
                 asset_content_type: application/java-archive
 
-            - name: Set Output VERSION_NUMBER
-              id: set_output_version_number
-              run: echo "::set-output name=version_number::${{ github.run_number }}"
-
     build_jars:
       name: package pointmark into FIJI
       runs-on: ubuntu-latest
@@ -98,9 +94,15 @@ jobs:
 #        - name: build JAR
 #          run: bash ./.github/scripts/build-jar.sh
 
+        - name: Download Release Asset
+          uses: dawidd6/action-download-artifact@v2
+          with:
+            workflow: Release Pointmark
+            name: pointmark-1.0.${{ needs.release_pointmark.outputs.version_number }}.jar
+            path: .
+
         - name: copy plugins and macros
           run: bash ./.github/scripts/collect-jars.sh ${{ needs.release_pointmark.outputs.version_number }}
-
 
         - name: package for ${{ matrix.fiji_target }}
           run: bash ./.github/scripts/pkg-${{ matrix.fiji_target }}.sh
