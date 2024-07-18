@@ -11,10 +11,18 @@ cd plugins
 
 echo "copying pointmark jar..."
 echo "The GitHub run number is: $GITHUB_RUN_NUMBER"
+echo "check"
 pwd
+ls -la
+echo "check2"
 cd ../../
 pwd
-cp pointmark-1.0.${GITHUB_RUN_NUMBER}.jar ./pointmark-1.0.${GITHUB_RUN_NUMBER}.jar
+ls -la
+echo "check3"
+cd ..
+pwd
+ls -la
+cp target/pointmark-1.0.${GITHUB_RUN_NUMBER}.jar ./pointmark-1.0.${GITHUB_RUN_NUMBER}.jar
 
 # https://figshare.com/articles/dataset/Custom_toolbars_and_mini_applications_with_Action_Bar/3397603
 echo "downloading action_bar.jar..."
