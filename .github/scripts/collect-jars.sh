@@ -1,7 +1,5 @@
 #!/bin/sh
 
-VERSION_NUMBER=$1
-
 set -eu
 
 mkdir -p Fiji.app
@@ -12,10 +10,9 @@ mkdir -p plugins
 cd plugins
 
 echo "copying pointmark jar..."
-echo "VERSION_NUMBER received: ${VERSION_NUMBER}"
-echo "VERSION_NUMBER=${VERSION_NUMBER}" >> $GITHUB_ENV
+echo "The GitHub run number is: $GITHUB_RUN_NUMBER"
 cd ../../
-cp pointmark-1.0.${VERSION_NUMBER}.jar ./pointmark-1.0.${VERSION_NUMBER}.jar
+cp pointmark-1.0.${GITHUB_RUN_NUMBER}.jar ./pointmark-1.0.${GITHUB_RUN_NUMBER}.jar
 
 # https://figshare.com/articles/dataset/Custom_toolbars_and_mini_applications_with_Action_Bar/3397603
 echo "downloading action_bar.jar..."
