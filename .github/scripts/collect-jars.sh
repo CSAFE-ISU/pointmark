@@ -14,7 +14,7 @@ echo "The GitHub run number is: $GITHUB_RUN_NUMBER"
 pwd
 cd ../../
 pwd
-cp pointmark-1.0.${GITHUB_RUN_NUMBER}.jar ./pointmark-1.0.${GITHUB_RUN_NUMBER}.jar
+cp target/pointmark-1.0.${GITHUB_RUN_NUMBER}.jar ./pointmark-1.0.${GITHUB_RUN_NUMBER}.jar
 
 # https://figshare.com/articles/dataset/Custom_toolbars_and_mini_applications_with_Action_Bar/3397603
 echo "downloading action_bar.jar..."
