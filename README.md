@@ -14,7 +14,7 @@ interest points on a ShoePrint image to be evaluated.
 This repo contains:
 
 - scripts to download ImageJ (for different OS/arch combos)
-- scripts to download the necessary plugins used in ShoeComp
+- scripts to download the necessary plugins used in PointMark
 - configuration files for ImageJ plugins
 
 Our Github Actions runner provides the PointMark plugin as a
