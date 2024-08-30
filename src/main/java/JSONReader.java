@@ -32,11 +32,21 @@ class JSONReader {
         RoiManager coords = RoiManager.getRoiManager(); //Opens RoI Manager if not already open
         coords.reset(); //Clears the previously open RoIs
 
-        JSONArray points = (JSONArray)reader.get("valid");
+        JSONArray points = null;
+        if (reader.has("valid")) {
+            points = (JSONArray) reader.get("valid");
+        } else if (reader.has("valid_points")) {
+            points = (JSONArray) reader.get("valid_points");
+        }
         PointRoi roi = new PointRoi();
         coords.add(fillROI(points, roi, true), 0); //identifier 0
 
-        points = (JSONArray)reader.get("invalid");
+        points = null;
+        if (reader.has("invalid")) {
+            points = (JSONArray) reader.get("invalid");
+        } else if (reader.has("invalid_points")) {
+            points = (JSONArray) reader.get("invalid_points");
+        }
         PointRoi roi2 = new PointRoi();
         coords.add(fillROI(points, roi2, false), 1); //identifier 1
 
